@@ -538,26 +538,47 @@ let lang = 'es';
 let state = { clients: [], currentClient: null, filter: 'all' };
 let visits = [];
 
-/* ---- API via JSONP (avoids CORS) ---- */
+/* ---- API via fetch with no-cors fallback ---- */
 function api(action, data={}) {
   return new Promise((resolve) => {
     const cbName = 'cb_' + Date.now() + '_' + Math.random().toString(36).slice(2);
     const params = new URLSearchParams({ action, callback: cbName, ...flattenData(data) });
-    const script = document.createElement('script');
-    const timeout = setTimeout(() => {
-      cleanup();
-      console.error('API timeout:', action);
-      resolve({ error: 'timeout' });
-    }, 15000);
-    function cleanup() {
-      clearTimeout(timeout);
-      delete window[cbName];
-      if(script.parentNode) script.parentNode.removeChild(script);
-    }
-    window[cbName] = (result) => { cleanup(); resolve(result); };
-    script.src = API_URL + '?' + params.toString();
-    script.onerror = () => { cleanup(); resolve({ error: 'script error' }); };
-    document.head.appendChild(script);
+    const url = API_URL + '?' + params.toString();
+
+    // Try fetch first (works when CORS headers present)
+    fetch(url)
+      .then(r => r.text())
+      .then(text => {
+        // Response might be JSONP wrapped: cbName({...}) or plain JSON
+        let result;
+        try {
+          // Try plain JSON first
+          result = JSON.parse(text);
+        } catch(e) {
+          // Try extracting from JSONP wrapper
+          const match = text.match(/\w+\((.+)\)\s*;?\s*$/s);
+          if(match) result = JSON.parse(match[1]);
+          else result = { error: 'parse error: ' + text.slice(0,100) };
+        }
+        resolve(result);
+      })
+      .catch(() => {
+        // Fallback to JSONP script tag
+        const script = document.createElement('script');
+        const timeout = setTimeout(() => {
+          cleanup();
+          resolve({ error: 'timeout' });
+        }, 15000);
+        function cleanup() {
+          clearTimeout(timeout);
+          delete window[cbName];
+          if(script.parentNode) script.parentNode.removeChild(script);
+        }
+        window[cbName] = (result) => { cleanup(); resolve(result); };
+        script.src = url;
+        script.onerror = () => { cleanup(); resolve({ error: 'script error' }); };
+        document.head.appendChild(script);
+      });
   });
 }
 
@@ -584,9 +605,13 @@ async function loadClients() {
   showSpinner(true);
   const data = await api('getClients');
   showSpinner(false);
+  console.log('loadClients response:', data);
   if(Array.isArray(data)) {
     state.clients = data.map(c => ({ ...c, props: [] }));
     renderClientsGrid();
+  } else {
+    const grid = document.getElementById('clients-grid');
+    if(grid) grid.innerHTML = '<div class="empty" style="grid-column:1/-1"><p style="color:var(--danger)">Error conectando con Google Sheets.<br><small>' + (data && data.error ? data.error : 'Intenta recargar') + '</small></p></div>';
   }
 }
 
