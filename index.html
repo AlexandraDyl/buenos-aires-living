@@ -151,6 +151,12 @@
   .autosave-note { display: flex; align-items: center; gap: 8px; background: var(--accent-light); border: 1px solid #B8CCE0; border-radius: var(--radius-sm); padding: 8px 14px; font-size: 13px; color: var(--accent-text); margin-bottom: 1.25rem; }
   .autosave-note svg { width: 15px; height: 15px; flex-shrink: 0; }
 
+  /* EDIT PROP MODAL */
+  .edit-modal { width: 520px; }
+  .edit-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .edit-grid .full { grid-column: 1 / -1; }
+  .edit-grid input { width: 100%; }
+
   /* MODAL */
   .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(22,24,31,0.5); z-index: 200; align-items: center; justify-content: center; backdrop-filter: blur(3px); }
   .modal-overlay.open { display: flex; }
@@ -437,6 +443,26 @@
 </div>
 
 <!-- MODAL -->
+<!-- EDIT PROPERTY MODAL -->
+<div class="modal-overlay" id="edit-prop-modal">
+  <div class="modal edit-modal">
+    <div class="modal-title">Editar propiedad</div>
+    <div class="edit-grid">
+      <div class="form-field full"><label>URL</label><input type="text" id="ep-url"></div>
+      <div class="form-field"><label>Precio (USD)</label><input type="text" id="ep-price"></div>
+      <div class="form-field"><label>Dirección</label><input type="text" id="ep-addr"></div>
+      <div class="form-field"><label>Amb.</label><input type="text" id="ep-rooms"></div>
+      <div class="form-field"><label>m²</label><input type="text" id="ep-m2"></div>
+      <div class="form-field full"><label>Piso / extra</label><input type="text" id="ep-floor"></div>
+      <div class="form-field full"><label>URL de foto (click derecho → copiar dirección de imagen)</label><input type="text" id="ep-photo"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeEditProp()">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveEditProp()">Guardar cambios</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="new-client-modal">
   <div class="modal">
     <div class="modal-title" id="modal-title">Nuevo cliente</div>
@@ -965,7 +991,7 @@ function renderPropsGrid(containerId, props, isAgent) {
         </div>
         <div class="prop-actions">
           <a href="${p.url}" target="_blank" class="btn btn-sm"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>${t('viewPortal')}</a>
-          ${isAgent?`<button class="btn btn-sm btn-danger-ghost" onclick="removeProp('${p.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></button>`:''}
+          ${isAgent?`<button class="btn btn-sm btn-ghost" onclick="openEditProp('${p.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button><button class="btn btn-sm btn-danger-ghost" onclick="removeProp('${p.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></button>`:''}
         </div>
         <textarea class="prop-comment" placeholder="${t('commentPh')}" onblur="saveComment('${p.id}',this.value)">${p.comment}</textarea>
         <div class="saved-msg" id="saved-${p.id}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 12 4 12"/></svg>${t('saved')}</div>
@@ -1116,6 +1142,66 @@ function copyLink() {
   const lbl=document.getElementById('lbl-copy'); if(lbl){lbl.textContent=t('copied'); setTimeout(()=>{lbl.textContent=t('copy');},2000);}
 }
 
+
+
+/* ---- EDIT PROPERTY ---- */
+let editingPropId = null;
+
+function openEditProp(pid) {
+  const c = state.clients.find(x=>x.id===state.currentClient);
+  const p = c && c.props.find(x=>x.id===pid);
+  if(!p) return;
+  editingPropId = pid;
+  document.getElementById('ep-url').value = p.url || '';
+  document.getElementById('ep-price').value = p.price || '';
+  document.getElementById('ep-addr').value = p.addr || '';
+  document.getElementById('ep-rooms').value = p.rooms || '';
+  document.getElementById('ep-m2').value = p.m2 || '';
+  document.getElementById('ep-floor').value = p.floor || '';
+  document.getElementById('ep-photo').value = p.image_url || '';
+  document.getElementById('edit-prop-modal').classList.add('open');
+}
+
+function closeEditProp() {
+  document.getElementById('edit-prop-modal').classList.remove('open');
+  editingPropId = null;
+}
+
+async function saveEditProp() {
+  if(!editingPropId) return;
+  const c = state.clients.find(x=>x.id===state.currentClient);
+  const p = c && c.props.find(x=>x.id===editingPropId);
+  if(!p) return;
+
+  const newUrl   = document.getElementById('ep-url').value.trim();
+  const newPrice = document.getElementById('ep-price').value.trim();
+  const newAddr  = document.getElementById('ep-addr').value.trim();
+  const newRooms = document.getElementById('ep-rooms').value.trim();
+  const newM2    = document.getElementById('ep-m2').value.trim();
+  const newFloor = document.getElementById('ep-floor').value.trim();
+  const newPhoto = document.getElementById('ep-photo').value.trim();
+
+  showSpinner(true);
+  await api('updateProperty', {
+    id: editingPropId,
+    url: newUrl, price: newPrice, address: newAddr,
+    rooms: newRooms, sqm: newM2, floor_info: newFloor,
+    image_url: newPhoto
+  });
+  showSpinner(false);
+
+  // Update local state
+  p.url = newUrl; p.price = newPrice; p.addr = newAddr;
+  p.rooms = newRooms; p.m2 = newM2; p.floor = newFloor;
+  p.image_url = newPhoto;
+  if(newPhoto) imageCache[editingPropId] = newPhoto;
+
+  closeEditProp();
+  renderPropsGrid('detail-props-grid', c.props, true);
+  syncClientView(c);
+}
+
+document.getElementById('edit-prop-modal').addEventListener('click', function(e){ if(e.target===this) closeEditProp(); });
 
 /* ---- CLIENT CALENDAR ---- */
 let calYearC = new Date().getFullYear();
