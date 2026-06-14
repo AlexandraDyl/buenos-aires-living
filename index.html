@@ -689,7 +689,7 @@ let calMonth = new Date().getMonth();
 let selectedDate = todayStr;
 let highlightedVisitId = null;
 
-function L() { return LANGS[lang]; }
+function getLang() { return LANGS[lang]; }
 function t(k) { return LANGS[lang][k] || k; }
 function getInitials(n) { return n.split(' ').slice(0,2).map(w=>w[0]).join('').toUpperCase(); }
 function sourceBadge(url) {
@@ -711,7 +711,7 @@ function setLang(l) {
 function applyTranslations() {
   const set = (id,v) => { const el=document.getElementById(id); if(el) el.textContent=v; };
   const ph  = (id,v) => { const el=document.getElementById(id); if(el) el.placeholder=v; };
-  const Lx = L();
+  const Lx = getLang();
   set('tab-agent', Lx.tabAgent);
   set('tab-visits', Lx.tabVisits);
   set('tab-client', Lx.tabClient);
@@ -754,7 +754,7 @@ function prevMonth() { calMonth--; if(calMonth<0){calMonth=11;calYear--;} render
 function nextMonth() { calMonth++; if(calMonth>11){calMonth=0;calYear++;} renderCal(); }
 
 function renderCal() {
-  const Lx = L();
+  const Lx = getLang();
   const cml = document.getElementById('cal-month-lbl'); if(cml) cml.textContent = `${Lx.MONTHS[calMonth]} ${calYear}`;
   const datesWithVisits = new Set(visits.map(v=>v.date));
   const first = new Date(calYear, calMonth, 1);
@@ -904,7 +904,7 @@ function renderMap(dayV, hlId) {
   agentLayers = result.layers;
 
   if(!dayV.length) { if(rc) rc.innerHTML=''; return; }
-  const Lx = L(), dist = dayV.length > 1 ? (dayV.length*1.8).toFixed(1) : '';
+  const Lx = getLang(), dist = dayV.length > 1 ? (dayV.length*1.8).toFixed(1) : '';
   if(rc) rc.innerHTML = `
     <span class="route-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>${Lx.visitCount(dayV.length)}</span>
     ${dist?`<span class="route-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>${Lx.estDist(dist)}</span>`:''}
@@ -951,7 +951,7 @@ async function removeVisit(e, id) {
 
 /* ---- CATALOG ---- */
 function renderClientsGrid() {
-  const subEl = document.getElementById('lbl-clients-sub'); if(subEl) subEl.textContent = L().clientsSub(state.clients.length);
+  const subEl = document.getElementById('lbl-clients-sub'); if(subEl) subEl.textContent = getLang().clientsSub(state.clients.length);
   const g = document.getElementById('clients-grid');
   if(!state.clients.length){
     g.innerHTML=`<div class="empty" style="grid-column:1/-1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg><p>${t('noClients')}</p></div>`; return;
@@ -961,7 +961,7 @@ function renderClientsGrid() {
     return `<div class="client-card" onclick="openClient('${c.id}')">
       <div class="client-top"><div class="avatar">${getInitials(c.name)}</div><div><div class="client-name">${c.name}</div><div class="client-budget">${c.budget}</div></div></div>
       <div class="client-footer">
-        <span class="stat-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>${L().propCount(c.props.length)}</span>
+        <span class="stat-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>${getLang().propCount(c.props.length)}</span>
         ${liked?`<span class="stat-chip liked"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>${liked}</span>`:''}
         ${commented?`<span class="stat-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>${commented}</span>`:''}
       </div></div>`;
@@ -1089,7 +1089,7 @@ function showClientsList() {
   renderClientsGrid();
 }
 function syncClientView(c) {
-  const Lx=L();
+  const Lx=getLang();
   document.getElementById('client-hero-title').textContent=Lx.heroTitle(c.name);
   document.getElementById('client-hero-sub').textContent=Lx.heroSub;
   document.getElementById('client-count').textContent=c.props.length;
@@ -1320,7 +1320,7 @@ function prevMonthC() { calMonthC--; if(calMonthC<0){calMonthC=11;calYearC--;} r
 function nextMonthC() { calMonthC++; if(calMonthC>11){calMonthC=0;calYearC++;} renderCalC(); }
 
 function renderCalC(clientName) {
-  const Lx = L();
+  const Lx = getLang();
   const lbl = document.getElementById('cal-month-lbl-c');
   if(lbl) lbl.textContent = `${Lx.MONTHS[calMonthC]} ${calYearC}`;
   const clientVisits = clientName ? visits.filter(v=>v.client===clientName) : visits;
@@ -1389,7 +1389,7 @@ function renderMapC(dayV, hlId) {
   clientLayers = result.layers;
 
   if(!dayV.length) { if(rc) rc.innerHTML=''; return; }
-  const Lx = L(), dist = dayV.length > 1 ? (dayV.length*1.8).toFixed(1) : '';
+  const Lx = getLang(), dist = dayV.length > 1 ? (dayV.length*1.8).toFixed(1) : '';
   if(rc) rc.innerHTML = `
     <span class="route-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>${Lx.visitCount(dayV.length)}</span>
     ${dist?`<span class="route-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>${Lx.estDist(dist)}</span>`:''}
