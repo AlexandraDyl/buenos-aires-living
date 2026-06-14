@@ -201,8 +201,9 @@
   .visit-link { font-size: 11px; color: var(--accent); text-decoration: none; display: inline-flex; align-items: center; gap: 3px; margin-top: 3px; }
   .visit-link:hover { text-decoration: underline; }
   .visit-link svg { width: 10px; height: 10px; }
-  .map-wrap { width: 100%; height: 290px; background: var(--surface2); border-radius: var(--radius-sm); overflow: hidden; margin-bottom: 12px; border: 1px solid var(--border); }
+  .map-wrap { width: 100%; height: 290px; background: var(--surface2); border-radius: var(--radius-sm); overflow: hidden; margin-bottom: 12px; border: 1px solid var(--border); position: relative; }
   .map-wrap svg { width: 100%; height: 100%; }
+  .gmap { width: 100%; height: 100%; }
   .route-chips { display: flex; gap: 8px; flex-wrap: wrap; }
   .route-chip { font-size: 12px; padding: 4px 10px; border-radius: 20px; background: var(--surface2); color: var(--text2); border: 1px solid var(--border); display: flex; align-items: center; gap: 5px; }
   .route-chip svg { width: 13px; height: 13px; }
@@ -231,6 +232,7 @@
     .input-url, .input-price, .input-addr, .input-rooms, .input-m2, .input-floor { width: 100%; }
   }
 </style>
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyA1RgOIPzoSix341BthffJhWwHJqzOixzk&callback=initGoogleMaps" async defer></script>
 </head>
 <body>
 
@@ -373,7 +375,7 @@
           </div>
         </div>
         <div class="v-panel-body">
-          <div class="map-wrap"><svg id="map-svg" viewBox="0 0 400 290" xmlns="http://www.w3.org/2000/svg"></svg></div>
+          <div class="map-wrap"><div id="gmap-agent" class="gmap"></div></div>
           <div class="route-chips" id="route-chips"></div>
         </div>
       </div>
@@ -437,7 +439,7 @@
             </div>
           </div>
           <div class="v-panel-body">
-            <div class="map-wrap"><svg id="map-svg-c" viewBox="0 0 400 290" xmlns="http://www.w3.org/2000/svg"></svg></div>
+            <div class="map-wrap"><div id="gmap-client" class="gmap"></div></div>
             <div class="route-chips" id="route-chips-c"></div>
           </div>
         </div>
@@ -810,61 +812,113 @@ function highlightVisit(id) {
   renderMap(dayV, id);
 }
 
+/* ---- GOOGLE MAPS ---- */
+let googleMapsReady = false;
+let agentMap = null, clientMap = null;
+let agentMarkers = [], agentRoute = null;
+let clientMarkers = [], clientRoute = null;
+
+function initGoogleMaps() {
+  googleMapsReady = true;
+}
+
+function getOrCreateMap(divId, mapRef) {
+  if(!googleMapsReady || !window.google) return null;
+  const el = document.getElementById(divId);
+  if(!el) return null;
+  if(mapRef) return mapRef;
+  return new google.maps.Map(el, {
+    zoom: 13,
+    center: { lat: -34.61, lng: -58.43 },
+    mapTypeControl: false,
+    streetViewControl: false,
+    fullscreenControl: true,
+    zoomControl: true,
+    styles: [
+      { featureType: 'poi', elementType: 'labels', stylers: [{ visibility: 'off' }] }
+    ]
+  });
+}
+
+function clearMapOverlays(markers, route) {
+  markers.forEach(m => m.setMap(null));
+  if(route) route.setMap(null);
+  return [];
+}
+
 function renderMap(dayV, hlId) {
-  const svg = document.getElementById('map-svg');
   const rc = document.getElementById('route-chips');
-  if(!dayV.length){
-    svg.innerHTML=`<rect width="400" height="290" fill="#f0ede6" rx="8"/><text x="200" y="145" text-anchor="middle" font-size="13" fill="#9799a6" font-family="sans-serif">${t('noVisits')}</text>`;
-    rc.innerHTML=''; return;
-  }
-  const lats=dayV.map(v=>v.lat), lngs=dayV.map(v=>v.lng);
-  const pad=0.012;
-  const minLat=Math.min(...lats)-pad, maxLat=Math.max(...lats)+pad;
-  const minLng=Math.min(...lngs)-pad, maxLng=Math.max(...lngs)+pad;
-  const ranLat=maxLat-minLat||0.03, ranLng=maxLng-minLng||0.03;
-  const W=400, H=290, MX=28, MY=22;
-  const toX=lng=>MX+((lng-minLng)/ranLng)*(W-MX*2);
-  const toY=lat=>MY+((maxLat-lat)/ranLat)*(H-MY*2);
 
-  let s=`<rect width="${W}" height="${H}" fill="#edecea" rx="8"/>`;
-  // Grid lines
-  for(let i=0;i<=4;i++){
-    const y=MY+(H-MY*2)*i/4;
-    s+=`<line x1="${MX}" y1="${y}" x2="${W-MX}" y2="${y}" stroke="#dddbd6" stroke-width="0.5"/>`;
+  if(!dayV.length) {
+    if(rc) rc.innerHTML = '';
+    return;
   }
 
-  // Route lines
-  for(let i=0;i<dayV.length-1;i++){
-    const a=dayV[i],b=dayV[i+1];
-    const x1=toX(a.lng),y1=toY(a.lat),x2=toX(b.lng),y2=toY(b.lat);
-    const mx=(x1+x2)/2,my=(y1+y2)/2-20;
-    s+=`<path d="M${x1},${y1} Q${mx},${my} ${x2},${y2}" stroke="#1B3A5C" stroke-width="2" fill="none" stroke-dasharray="5 3" opacity="0.5"/>`;
-    const ang=Math.atan2(y2-y1,x2-x1);
-    const ax=((x1+x2)/2+Math.cos(ang)*6), ay=((y1+y2)/2+Math.sin(ang)*6);
-    s+=`<polygon points="0,-4 3.5,3 -3.5,3" fill="#1B3A5C" opacity="0.6" transform="translate(${ax},${ay}) rotate(${ang*180/Math.PI+90})"/>`;
-  }
+  agentMap = getOrCreateMap('gmap-agent', agentMap);
+  if(!agentMap) return;
 
-  // Pins
-  dayV.forEach((v,i)=>{
-    const x=toX(v.lng), y=toY(v.lat);
-    const isHL = v.id===hlId;
-    const r = isHL?15:11;
-    s+=`<circle cx="${x}" cy="${y}" r="${r+3}" fill="rgba(27,58,92,0.12)"/>`;
-    s+=`<circle cx="${x}" cy="${y}" r="${r}" fill="${isHL?'#1B3A5C':'#fff'}" stroke="#1B3A5C" stroke-width="${isHL?0:1.5}"/>`;
-    s+=`<text x="${x}" y="${y+4}" text-anchor="middle" font-size="${isHL?11:10}" font-weight="600" fill="${isHL?'#fff':'#1B3A5C'}" font-family="sans-serif">${i+1}</text>`;
-    const parts=v.addr.split(',');
-    const lx=x+(x>W/2?-14:14), anchor=x>W/2?'end':'start';
-    s+=`<rect x="${x>W/2?lx-parts[0].length*4.5:lx-4}" y="${y-26}" width="${parts[0].length*5.2}" height="16" rx="4" fill="rgba(255,255,255,0.88)"/>`;
-    s+=`<text x="${lx}" y="${y-15}" text-anchor="${anchor}" font-size="10" font-weight="500" fill="#16181F" font-family="sans-serif">${parts[0]}</text>`;
+  agentMarkers = clearMapOverlays(agentMarkers, agentRoute);
+  agentRoute = null;
+
+  const bounds = new google.maps.LatLngBounds();
+  const waypoints = [];
+
+  dayV.forEach((v, i) => {
+    const pos = { lat: parseFloat(v.lat), lng: parseFloat(v.lng) };
+    bounds.extend(pos);
+
+    const isHL = v.id === hlId;
+    const marker = new google.maps.Marker({
+      position: pos,
+      map: agentMap,
+      label: { text: String(i+1), color: isHL ? '#fff' : '#1B3A5C', fontWeight: '600', fontSize: '12px' },
+      icon: {
+        path: google.maps.SymbolPath.CIRCLE,
+        scale: isHL ? 16 : 12,
+        fillColor: isHL ? '#1B3A5C' : '#fff',
+        fillOpacity: 1,
+        strokeColor: '#1B3A5C',
+        strokeWeight: isHL ? 0 : 2,
+      },
+      title: v.addr,
+      zIndex: isHL ? 10 : i
+    });
+
+    const infoWindow = new google.maps.InfoWindow({
+      content: `<div style="font-family:DM Sans,sans-serif;padding:4px 2px"><strong>${v.time}</strong><br>${v.addr}<br><small>${v.client||''}</small>${v.url?`<br><a href="${v.url}" target="_blank" style="color:#1B3A5C">Ver propiedad →</a>`:''}</div>`
+    });
+    marker.addListener('click', () => infoWindow.open(agentMap, marker));
+    agentMarkers.push(marker);
+
+    if(i > 0 && i < dayV.length - 1) waypoints.push({ location: pos, stopover: true });
   });
 
-  svg.innerHTML=s;
+  agentMap.fitBounds(bounds);
 
-  const Lx=L();
-  const dist=dayV.length>1?(dayV.length*1.8).toFixed(1):'';
-  rc.innerHTML=`
+  // Draw route if 2+ visits
+  if(dayV.length >= 2) {
+    const directionsService = new google.maps.DirectionsService();
+    const directionsRenderer = new google.maps.DirectionsRenderer({
+      map: agentMap,
+      suppressMarkers: true,
+      polylineOptions: { strokeColor: '#1B3A5C', strokeOpacity: 0.6, strokeWeight: 3 }
+    });
+    directionsService.route({
+      origin: { lat: parseFloat(dayV[0].lat), lng: parseFloat(dayV[0].lng) },
+      destination: { lat: parseFloat(dayV[dayV.length-1].lat), lng: parseFloat(dayV[dayV.length-1].lng) },
+      waypoints,
+      travelMode: google.maps.TravelMode.DRIVING
+    }, (result, status) => {
+      if(status === 'OK') directionsRenderer.setDirections(result);
+    });
+    agentRoute = directionsRenderer;
+  }
+
+  const Lx = L();
+  const dist = dayV.length > 1 ? (dayV.length * 1.8).toFixed(1) : '';
+  if(rc) rc.innerHTML = `
     <span class="route-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>${Lx.visitCount(dayV.length)}</span>
-    ${dist?`<span class="route-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 8.2c0 7.3-8 11.8-8 11.8z"/></svg>${Lx.estDist(dist)}</span>`:''}
+    ${dist ? `<span class="route-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>${Lx.estDist(dist)}</span>` : ''}
     <span class="route-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>${dayV[0].time} – ${dayV[dayV.length-1].time}</span>
   `;
 }
@@ -886,6 +940,19 @@ async function saveVisit() {
   const data = await api('addVisit', { date, time, address, client_name, url });
   showSpinner(false);
   if(data.id) {
+    // Geocode address if lat/lng are default values
+    let lat = data.lat, lng = data.lng;
+    if(googleMapsReady && window.google && (Math.abs(lat - (-34.59)) < 0.05)) {
+      const geocoder = new google.maps.Geocoder();
+      geocoder.geocode({ address: address + ', Buenos Aires, Argentina' }, (results, status) => {
+        if(status === 'OK' && results[0]) {
+          lat = results[0].geometry.location.lat();
+          lng = results[0].geometry.location.lng();
+          visits.find(v=>v.id===data.id && (v.lat = lat) && (v.lng = lng));
+          api('updateVisitCoords', { id: data.id, lat, lng });
+        }
+      });
+    }
     visits.push({ id:data.id, date, time, addr:address, client:client_name, url, lat:data.lat, lng:data.lng });
     document.getElementById('f-addr').value='';
     document.getElementById('f-client').value='';
@@ -1340,44 +1407,62 @@ function highlightVisitC(id, clientName) {
 }
 
 function renderMapC(dayV, hlId) {
-  const svg = document.getElementById('map-svg-c');
   const rc = document.getElementById('route-chips-c');
-  if(!svg) return;
-  if(!dayV.length){
-    svg.innerHTML=`<rect width="400" height="290" fill="#edecea" rx="8"/><text x="200" y="145" text-anchor="middle" font-size="13" fill="#9799a6" font-family="sans-serif">${t('noVisits')}</text>`;
-    if(rc) rc.innerHTML=''; return;
-  }
-  const lats=dayV.map(v=>v.lat), lngs=dayV.map(v=>v.lng);
-  const pad=0.012;
-  const minLat=Math.min(...lats)-pad, maxLat=Math.max(...lats)+pad;
-  const minLng=Math.min(...lngs)-pad, maxLng=Math.max(...lngs)+pad;
-  const ranLat=maxLat-minLat||0.03, ranLng=maxLng-minLng||0.03;
-  const W=400,H=290,MX=28,MY=22;
-  const toX=lng=>MX+((lng-minLng)/ranLng)*(W-MX*2);
-  const toY=lat=>MY+((maxLat-lat)/ranLat)*(H-MY*2);
-  let s=`<rect width="${W}" height="${H}" fill="#edecea" rx="8"/>`;
-  for(let i=0;i<=4;i++){const y=MY+(H-MY*2)*i/4;s+=`<line x1="${MX}" y1="${y}" x2="${W-MX}" y2="${y}" stroke="#dddbd6" stroke-width="0.5"/>`;}
-  for(let i=0;i<dayV.length-1;i++){
-    const a=dayV[i],b=dayV[i+1];
-    const x1=toX(a.lng),y1=toY(a.lat),x2=toX(b.lng),y2=toY(b.lat);
-    const mx=(x1+x2)/2,my=(y1+y2)/2-20;
-    s+=`<path d="M${x1},${y1} Q${mx},${my} ${x2},${y2}" stroke="#1B3A5C" stroke-width="2" fill="none" stroke-dasharray="5 3" opacity="0.5"/>`;
-    const ang=Math.atan2(y2-y1,x2-x1);
-    const ax=((x1+x2)/2+Math.cos(ang)*6),ay=((y1+y2)/2+Math.sin(ang)*6);
-    s+=`<polygon points="0,-4 3.5,3 -3.5,3" fill="#1B3A5C" opacity="0.6" transform="translate(${ax},${ay}) rotate(${ang*180/Math.PI+90})"/>`;
-  }
-  dayV.forEach((v,i)=>{
-    const x=toX(v.lng),y=toY(v.lat),isHL=v.id===hlId,r=isHL?15:11;
-    s+=`<circle cx="${x}" cy="${y}" r="${r+3}" fill="rgba(27,58,92,0.12)"/>`;
-    s+=`<circle cx="${x}" cy="${y}" r="${r}" fill="${isHL?'#1B3A5C':'#fff'}" stroke="#1B3A5C" stroke-width="${isHL?0:1.5}"/>`;
-    s+=`<text x="${x}" y="${y+4}" text-anchor="middle" font-size="${isHL?11:10}" font-weight="600" fill="${isHL?'#fff':'#1B3A5C'}" font-family="sans-serif">${i+1}</text>`;
-    const parts=v.addr.split(','),lx=x+(x>W/2?-14:14),anchor=x>W/2?'end':'start';
-    s+=`<rect x="${x>W/2?lx-parts[0].length*4.5:lx-4}" y="${y-26}" width="${parts[0].length*5.2}" height="16" rx="4" fill="rgba(255,255,255,0.88)"/>`;
-    s+=`<text x="${lx}" y="${y-15}" text-anchor="${anchor}" font-size="10" font-weight="500" fill="#16181F" font-family="sans-serif">${parts[0]}</text>`;
+  if(!dayV.length) { if(rc) rc.innerHTML=''; return; }
+
+  clientMap = getOrCreateMap('gmap-client', clientMap);
+  if(!clientMap) return;
+
+  clientMarkers = clearMapOverlays(clientMarkers, clientRoute);
+  clientRoute = null;
+
+  const bounds = new google.maps.LatLngBounds();
+  const waypoints = [];
+
+  dayV.forEach((v, i) => {
+    const pos = { lat: parseFloat(v.lat), lng: parseFloat(v.lng) };
+    bounds.extend(pos);
+    const isHL = v.id === hlId;
+    const marker = new google.maps.Marker({
+      position: pos,
+      map: clientMap,
+      label: { text: String(i+1), color: isHL ? '#fff' : '#1B3A5C', fontWeight: '600', fontSize: '12px' },
+      icon: {
+        path: google.maps.SymbolPath.CIRCLE,
+        scale: isHL ? 16 : 12,
+        fillColor: isHL ? '#1B3A5C' : '#fff',
+        fillOpacity: 1,
+        strokeColor: '#1B3A5C',
+        strokeWeight: isHL ? 0 : 2,
+      },
+      title: v.addr
+    });
+    const infoWindow = new google.maps.InfoWindow({
+      content: `<div style="font-family:DM Sans,sans-serif;padding:4px 2px"><strong>${v.time}</strong><br>${v.addr}${v.url?`<br><a href="${v.url}" target="_blank" style="color:#1B3A5C">Ver propiedad →</a>`:''}</div>`
+    });
+    marker.addListener('click', () => infoWindow.open(clientMap, marker));
+    clientMarkers.push(marker);
+    if(i > 0 && i < dayV.length - 1) waypoints.push({ location: pos, stopover: true });
   });
-  svg.innerHTML=s;
-  const Lx=L(),dist=dayV.length>1?(dayV.length*1.8).toFixed(1):'';
-  if(rc) rc.innerHTML=`
+
+  clientMap.fitBounds(bounds);
+
+  if(dayV.length >= 2) {
+    const ds = new google.maps.DirectionsService();
+    const dr = new google.maps.DirectionsRenderer({
+      map: clientMap, suppressMarkers: true,
+      polylineOptions: { strokeColor: '#1B3A5C', strokeOpacity: 0.6, strokeWeight: 3 }
+    });
+    ds.route({
+      origin: { lat: parseFloat(dayV[0].lat), lng: parseFloat(dayV[0].lng) },
+      destination: { lat: parseFloat(dayV[dayV.length-1].lat), lng: parseFloat(dayV[dayV.length-1].lng) },
+      waypoints, travelMode: google.maps.TravelMode.DRIVING
+    }, (result, status) => { if(status === 'OK') dr.setDirections(result); });
+    clientRoute = dr;
+  }
+
+  const Lx = L(), dist = dayV.length > 1 ? (dayV.length*1.8).toFixed(1) : '';
+  if(rc) rc.innerHTML = `
     <span class="route-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>${Lx.visitCount(dayV.length)}</span>
     ${dist?`<span class="route-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>${Lx.estDist(dist)}</span>`:''}
     <span class="route-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>${dayV[0].time} – ${dayV[dayV.length-1].time}</span>
