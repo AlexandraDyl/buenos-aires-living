@@ -541,56 +541,31 @@ let lang = 'es';
 let state = { clients: [], currentClient: null, filter: 'all' };
 let visits = [];
 
-/* ---- API via fetch with no-cors fallback ---- */
+/* ---- API via JSONP ---- */
 function api(action, data={}) {
   return new Promise((resolve) => {
-    const cbName = 'cb_' + Date.now() + '_' + Math.random().toString(36).slice(2);
-    const params = new URLSearchParams({ action, callback: cbName, ...flattenData(data) });
+    const cbName = 'cb_' + Date.now();
+    const flat = {};
+    for(const [k,v] of Object.entries(data)) flat[k] = (v===null||v===undefined)?'':String(v);
+    const params = new URLSearchParams({ action, callback: cbName, ...flat });
     const url = API_URL + '?' + params.toString();
-
-    // Try fetch first (works when CORS headers present)
-    fetch(url)
-      .then(r => r.text())
-      .then(text => {
-        // Response might be JSONP wrapped: cbName({...}) or plain JSON
-        let result;
-        try {
-          // Try plain JSON first
-          result = JSON.parse(text);
-        } catch(e) {
-          // Try extracting from JSONP wrapper
-          const match = text.match(/\w+\((.+)\)\s*;?\s*$/s);
-          if(match) result = JSON.parse(match[1]);
-          else result = { error: 'parse error: ' + text.slice(0,100) };
-        }
-        resolve(result);
-      })
-      .catch(() => {
-        // Fallback to JSONP script tag
-        const script = document.createElement('script');
-        const timeout = setTimeout(() => {
-          cleanup();
-          resolve({ error: 'timeout' });
-        }, 15000);
-        function cleanup() {
-          clearTimeout(timeout);
-          delete window[cbName];
-          if(script.parentNode) script.parentNode.removeChild(script);
-        }
-        window[cbName] = (result) => { cleanup(); resolve(result); };
-        script.src = url;
-        script.onerror = () => { cleanup(); resolve({ error: 'script error' }); };
-        document.head.appendChild(script);
-      });
+    const script = document.createElement('script');
+    const timeout = setTimeout(() => {
+      cleanup();
+      console.error('API timeout for action:', action);
+      resolve({ error: 'timeout' });
+    }, 20000);
+    function cleanup() {
+      clearTimeout(timeout);
+      try { delete window[cbName]; } catch(e){}
+      if(script.parentNode) script.parentNode.removeChild(script);
+    }
+    window[cbName] = function(result) { cleanup(); resolve(result); };
+    script.onerror = function() { cleanup(); console.error('Script load error for:', action); resolve({ error: 'load error' }); };
+    script.src = url;
+    document.head.appendChild(script);
+    console.log('API call:', action, flat);
   });
-}
-
-function flattenData(data) {
-  const out = {};
-  for(const [k,v] of Object.entries(data)) {
-    out[k] = typeof v === 'object' ? JSON.stringify(v) : v;
-  }
-  return out;
 }
 
 function showSpinner(show) {
