@@ -619,7 +619,9 @@ async function loadClients() {
 }
 
 async function loadProperties(clientId) {
+  console.log('loadProperties called with:', clientId);
   const data = await api('getProperties', { clientId });
+  console.log('loadProperties response:', data);
   if(Array.isArray(data)) {
     const c = state.clients.find(x=>x.id===clientId);
     if(c) {
