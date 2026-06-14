@@ -110,6 +110,9 @@
   .prop-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); transition: all 0.2s; display: flex; flex-direction: column; }
   .prop-card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
   .prop-thumb { height: 170px; background: linear-gradient(135deg, var(--surface2) 0%, var(--bg) 100%); display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; }
+  .prop-thumb img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .prop-thumb-loading { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
+  .prop-thumb-loading::after { content:''; width:20px; height:20px; border:2px solid var(--border); border-top-color:var(--accent); border-radius:50%; animation:spin .7s linear infinite; }
   .prop-thumb-icon { opacity: 0.18; }
   .prop-thumb-icon svg { width: 64px; height: 64px; }
   .prop-source-badge { position: absolute; bottom: 10px; left: 10px; font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 20px; letter-spacing: 0.3px; }
@@ -624,8 +627,11 @@ async function loadProperties(clientId) {
         id: p.id, url: p.url, price: p.price, addr: p.address,
         rooms: p.rooms, m2: p.sqm, floor: p.floor_info,
         liked: p.liked === true || p.liked === 'TRUE',
-        comment: p.comment || ''
+        comment: p.comment || '',
+        image_url: p.image_url || ''
       }));
+      // Pre-populate image cache
+      c.props.forEach(p => { if(p.image_url) imageCache[p.id] = p.image_url; });
     }
   }
 }
@@ -887,14 +893,69 @@ function renderClientsGrid() {
   }).join('');
 }
 
+
+/* ---- OG IMAGE FETCH ---- */
+const imageCache = {};
+
+async function fetchOgImage(url, propId) {
+  if(imageCache[propId]) return imageCache[propId];
+  try {
+    const proxyUrl = 'https://api.allorigins.win/get?url=' + encodeURIComponent(url);
+    const res = await fetch(proxyUrl, { signal: AbortSignal.timeout(8000) });
+    const data = await res.json();
+    const html = data.contents || '';
+    // Try og:image first
+    let match = html.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/) ||
+                html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/);
+    if(!match) {
+      // Try twitter:image
+      match = html.match(/<meta[^>]+name=["']twitter:image["'][^>]+content=["']([^"']+)["']/) ||
+              html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+name=["']twitter:image["']/);
+    }
+    if(match && match[1]) {
+      const imgUrl = match[1].replace(/&amp;/g,'&');
+      imageCache[propId] = imgUrl;
+      return imgUrl;
+    }
+  } catch(e) { /* silent fail */ }
+  return null;
+}
+
+async function loadPropImages(props) {
+  await Promise.all(props.map(async (p) => {
+    if(imageCache[p.id]) {
+      const el = document.getElementById('thumb-img-' + p.id);
+      if(el) { el.src = imageCache[p.id]; el.style.display='block'; }
+      const loader = document.getElementById('thumb-load-' + p.id);
+      if(loader) loader.style.display='none';
+      return;
+    }
+    const imgUrl = await fetchOgImage(p.url, p.id);
+    if(imgUrl) {
+      const el = document.getElementById('thumb-img-' + p.id);
+      if(el) {
+        el.onload = () => { el.style.display='block'; const l=document.getElementById('thumb-load-'+p.id); if(l)l.style.display='none'; };
+        el.onerror = () => { el.style.display='none'; const l=document.getElementById('thumb-load-'+p.id); if(l)l.style.display='none'; };
+        el.src = imgUrl;
+      }
+    } else {
+      const loader = document.getElementById('thumb-load-' + p.id);
+      if(loader) loader.style.display='none';
+    }
+  }));
+}
+
 function renderPropsGrid(containerId, props, isAgent) {
   const g = document.getElementById(containerId); if(!g) return;
   const filtered = state.filter==='liked' ? props.filter(p=>p.liked) : props;
   if(!filtered.length){ g.innerHTML=`<div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg><p>${t('noProps')}</p></div>`; return; }
-  g.innerHTML = filtered.map(p=>`
+  const propsToRender = filtered;
+  g.innerHTML = propsToRender.map(p=>`
     <div class="prop-card" id="card-${p.id}">
       <div class="prop-thumb">
         <div class="prop-thumb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>
+        <img id="thumb-img-${p.id}" src="" alt="" style="display:none">
+        <div class="prop-thumb-loading" id="thumb-load-${p.id}"></div>
         ${sourceBadge(p.url)}
         <div class="fav-btn ${p.liked?'liked':''}" onclick="toggleLike('${p.id}')">
           <svg viewBox="0 0 24 24" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
@@ -916,6 +977,8 @@ function renderPropsGrid(containerId, props, isAgent) {
         <div class="saved-msg" id="saved-${p.id}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 12 4 12"/></svg>${t('saved')}</div>
       </div>
     </div>`).join('');
+  // Load photos async
+  setTimeout(() => loadPropImages(propsToRender), 50);
 }
 
 async function openClient(id) {
@@ -998,11 +1061,17 @@ async function addProperty() {
   const data = await api('addProperty', propData);
   showSpinner(false);
   if(data.id) {
-    c.props.push({id:data.id,url,price:propData.price,addr:propData.address,rooms:propData.rooms,m2:propData.sqm,floor:propData.floor_info,liked:false,comment:''});
+    const newProp = {id:data.id,url,price:propData.price,addr:propData.address,rooms:propData.rooms,m2:propData.sqm,floor:propData.floor_info,liked:false,comment:'',image_url:''};
+    c.props.push(newProp);
     ['new-url','new-price','new-addr','new-rooms','new-m2','new-floor'].forEach(id=>{document.getElementById(id).value='';});
     renderPropsGrid('detail-props-grid',c.props,true); syncClientView(c);
-    // update count
     c.prop_count = c.props.length;
+    // Fetch and save image in background
+    fetchOgImage(url, data.id).then(imgUrl => {
+      if(imgUrl) {
+        api('updateProperty', { id: data.id, image_url: imgUrl });
+      }
+    });
   }
 }
 async function removeProp(pid) {
