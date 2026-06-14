@@ -610,7 +610,7 @@ async function loadClients() {
   showSpinner(false);
   console.log('loadClients response:', data);
   if(Array.isArray(data)) {
-    state.clients = data.map(c => ({ ...c, props: [] }));
+    state.clients = data.map(c => ({ ...c, props: [], prop_count: c.prop_count||0, liked_count: c.liked_count||0 }));
     renderClientsGrid();
   } else {
     const grid = document.getElementById('clients-grid');
@@ -882,7 +882,7 @@ function renderClientsGrid() {
     g.innerHTML=`<div class="empty" style="grid-column:1/-1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg><p>${t('noClients')}</p></div>`; return;
   }
   g.innerHTML = state.clients.map(c=>{
-    const liked=c.props.filter(p=>p.liked).length, commented=c.props.filter(p=>p.comment).length;
+    const props=c.props||[]; const liked=props.filter(p=>p.liked).length, commented=props.filter(p=>p.comment).length;
     return `<div class="client-card" onclick="openClient('${c.id}')">
       <div class="client-top"><div class="avatar">${getInitials(c.name)}</div><div><div class="client-name">${c.name}</div><div class="client-budget">${c.budget}</div></div></div>
       <div class="client-footer">
@@ -1060,6 +1060,7 @@ async function addProperty() {
   showSpinner(true);
   const data = await api('addProperty', propData);
   showSpinner(false);
+  console.log('addProperty response:', data);
   if(data.id) {
     const newProp = {id:data.id,url,price:propData.price,addr:propData.address,rooms:propData.rooms,m2:propData.sqm,floor:propData.floor_info,liked:false,comment:'',image_url:''};
     c.props.push(newProp);
