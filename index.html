@@ -729,7 +729,7 @@ function renderCal() {
     html+=`<div class="${cls}" onclick="selectDate('${ds}')">${d}</div>`;
   }
   const rem = (startDow+daysInMonth)%7; if(rem) for(let i=1;i<=7-rem;i++) html+=`<div class="cal-day other">${i}</div>`;
-  document.getElementById('cal-grid').innerHTML = html;
+  const cg = document.getElementById('cal-grid'); if(cg) cg.innerHTML = html;
   renderDayVisits();
 }
 
@@ -870,7 +870,7 @@ async function removeVisit(e, id) {
 
 /* ---- CATALOG ---- */
 function renderClientsGrid() {
-  document.getElementById('lbl-clients-sub').textContent = L().clientsSub(state.clients.length);
+  const subEl = document.getElementById('lbl-clients-sub'); if(subEl) subEl.textContent = L().clientsSub(state.clients.length);
   const g = document.getElementById('clients-grid');
   if(!state.clients.length){
     g.innerHTML=`<div class="empty" style="grid-column:1/-1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg><p>${t('noClients')}</p></div>`; return;
