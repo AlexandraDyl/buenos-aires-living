@@ -2,6 +2,8 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Buenos Aires Living</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -232,8 +234,6 @@
     .input-url, .input-price, .input-addr, .input-rooms, .input-m2, .input-floor { width: 100%; }
   }
 </style>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
 <body>
 
@@ -818,15 +818,24 @@ let agentMap = null, clientMap = null;
 let agentLayers = [], clientLayers = [];
 
 function getOrCreateLeafletMap(divId, mapRef) {
+  if(typeof L === 'undefined' || typeof L.map !== 'function') {
+    console.log('Leaflet not ready yet');
+    return null;
+  }
   const el = document.getElementById(divId);
   if(!el) return null;
   if(mapRef) return mapRef;
-  const map = L.map(divId, { zoomControl: true }).setView([-34.61, -58.43], 13);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '© OpenStreetMap',
-    maxZoom: 19
-  }).addTo(map);
-  return map;
+  try {
+    const map = L.map(divId, { zoomControl: true }).setView([-34.61, -58.43], 13);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap',
+      maxZoom: 19
+    }).addTo(map);
+    return map;
+  } catch(e) {
+    console.log('Map init error:', e.message);
+    return null;
+  }
 }
 
 function clearLeafletLayers(map, layers) {
