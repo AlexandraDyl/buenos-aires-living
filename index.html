@@ -528,27 +528,77 @@ const LANGS = {
   }
 };
 
-let lang = 'es';
-let state = {
-  clients: [
-    {id:'c1', name:'María González', budget:'hasta USD 150.000, 3 amb.', props:[
-      {id:'p1',url:'https://www.zonaprop.com.ar/propiedades/departamento-palermo-3-amb-45735182.html',price:'USD 148.000',addr:'Palermo, CABA',rooms:'3 amb.',m2:'72m²',floor:'3° piso, luminoso',liked:false,comment:''},
-      {id:'p2',url:'https://inmuebles.mercadolibre.com.ar/departamentos/3-ambientes/',price:'USD 142.000',addr:'Villa Crespo, CABA',rooms:'3 amb.',m2:'65m²',floor:'4° piso, expensas bajas',liked:false,comment:''}
-    ]},
-    {id:'c2', name:'Lucas Fernández', budget:'hasta USD 90.000, 2 amb.', props:[
-      {id:'p3',url:'https://www.zonaprop.com.ar/propiedades/departamento-almagro-2-amb-45123456.html',price:'USD 88.000',addr:'Almagro, CABA',rooms:'2 amb.',m2:'48m²',floor:'2° piso, balcón',liked:false,comment:''}
-    ]}
-  ],
-  currentClient: null,
-  filter: 'all'
-};
+// =========================================================
+//  PASTE YOUR APPS SCRIPT URL HERE after deploying
+// =========================================================
+const API_URL = 'https://script.google.com/macros/s/AKfycbwvHpoZTRJP1MYPespuEu-5lk7JJhsjF3Tzg9NGHWOwd5mLXU3YGxkmyADSAtw3BkWa/exec';
+// =========================================================
 
-let visits = [
-  {id:1, date:'2026-06-09', time:'10:00', addr:'Av. Libertador 1500, Palermo', client:'María González', url:'https://zonaprop.com.ar', lat:-34.578, lng:-58.426},
-  {id:2, date:'2026-06-09', time:'12:30', addr:'Thames 2100, Villa Crespo', client:'María González', url:'https://zonaprop.com.ar', lat:-34.597, lng:-58.443},
-  {id:3, date:'2026-06-09', time:'16:00', addr:'Corrientes 4500, Almagro', client:'Lucas Fernández', url:'https://mercadolibre.com.ar', lat:-34.606, lng:-58.435},
-  {id:4, date:'2026-06-12', time:'11:00', addr:'Av. Santa Fe 3200, Palermo', client:'María González', url:'', lat:-34.584, lng:-58.420},
-];
+let lang = 'es';
+let state = { clients: [], currentClient: null, filter: 'all' };
+let visits = [];
+
+/* ---- API ---- */
+async function api(action, data={}) {
+  try {
+    const res = await fetch(API_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action, ...data })
+    });
+    return await res.json();
+  } catch(e) {
+    console.error('API error', e);
+    return { error: e.toString() };
+  }
+}
+
+function showSpinner(show) {
+  let el = document.getElementById('global-spinner');
+  if(!el) {
+    el = document.createElement('div');
+    el.id = 'global-spinner';
+    el.style.cssText = 'position:fixed;top:0;left:0;right:0;height:3px;background:var(--accent);z-index:999;transition:opacity .3s';
+    document.body.appendChild(el);
+  }
+  el.style.opacity = show ? '1' : '0';
+}
+
+async function loadClients() {
+  showSpinner(true);
+  const data = await api('getClients');
+  showSpinner(false);
+  if(Array.isArray(data)) {
+    state.clients = data.map(c => ({ ...c, props: [] }));
+    renderClientsGrid();
+  }
+}
+
+async function loadProperties(clientId) {
+  const data = await api('getProperties', { clientId });
+  if(Array.isArray(data)) {
+    const c = state.clients.find(x=>x.id===clientId);
+    if(c) {
+      c.props = data.map(p => ({
+        id: p.id, url: p.url, price: p.price, addr: p.address,
+        rooms: p.rooms, m2: p.sqm, floor: p.floor_info,
+        liked: p.liked === true || p.liked === 'TRUE',
+        comment: p.comment || ''
+      }));
+    }
+  }
+}
+
+async function loadVisits() {
+  const data = await api('getVisits');
+  if(Array.isArray(data)) {
+    visits = data.map(v => ({
+      id: v.id, date: v.date, time: v.time, addr: v.address,
+      client: v.client_name, url: v.url,
+      lat: parseFloat(v.lat) || -34.59,
+      lng: parseFloat(v.lng) || -58.43
+    }));
+  }
+}
 
 const todayStr = new Date().toISOString().split('T')[0];
 let calYear = new Date().getFullYear();
@@ -745,24 +795,32 @@ function toggleVisitForm() {
   if(f.classList.contains('open')) document.getElementById('f-date').value = selectedDate;
 }
 
-function saveVisit() {
+async function saveVisit() {
   const date=document.getElementById('f-date').value;
   const time=document.getElementById('f-time').value;
-  const addr=document.getElementById('f-addr').value.trim();
-  const client=document.getElementById('f-client').value.trim();
+  const address=document.getElementById('f-addr').value.trim();
+  const client_name=document.getElementById('f-client').value.trim();
   const url=document.getElementById('f-url').value.trim();
-  if(!addr||!date) return;
-  visits.push({id:Date.now(), date, time, addr, client, url, lat:-34.59+(Math.random()-.5)*.04, lng:-58.43+(Math.random()-.5)*.04});
-  document.getElementById('f-addr').value='';
-  document.getElementById('f-client').value='';
-  document.getElementById('f-url').value='';
-  toggleVisitForm();
-  applyTranslations();
-  selectDate(date);
+  if(!address||!date) return;
+  showSpinner(true);
+  const data = await api('addVisit', { date, time, address, client_name, url });
+  showSpinner(false);
+  if(data.id) {
+    visits.push({ id:data.id, date, time, addr:address, client:client_name, url, lat:data.lat, lng:data.lng });
+    document.getElementById('f-addr').value='';
+    document.getElementById('f-client').value='';
+    document.getElementById('f-url').value='';
+    toggleVisitForm();
+    applyTranslations();
+    selectDate(date);
+  }
 }
 
-function removeVisit(e, id) {
+async function removeVisit(e, id) {
   e.stopPropagation();
+  showSpinner(true);
+  await api('deleteVisit', { id });
+  showSpinner(false);
   visits = visits.filter(v=>v.id!==id);
   applyTranslations();
   renderDayVisits();
@@ -818,15 +876,19 @@ function renderPropsGrid(containerId, props, isAgent) {
     </div>`).join('');
 }
 
-function openClient(id) {
+async function openClient(id) {
   state.currentClient = id;
   const c = state.clients.find(x=>x.id===id);
   document.getElementById('clients-list-view').style.display='none';
   document.getElementById('client-detail-view').style.display='block';
   document.getElementById('detail-avatar').textContent=getInitials(c.name);
   document.getElementById('detail-name').textContent=c.name;
-  document.getElementById('detail-budget').textContent=c.budget;
-  document.getElementById('detail-link').textContent=`micatalogo.app/cliente/${c.id}`;
+  document.getElementById('detail-budget').textContent=c.budget||'';
+  const siteUrl = window.location.origin + window.location.pathname;
+  document.getElementById('detail-link').textContent=`${siteUrl}?client=${c.id}`;
+  showSpinner(true);
+  await loadProperties(id);
+  showSpinner(false);
   renderPropsGrid('detail-props-grid', c.props, true);
   syncClientView(c);
 }
@@ -866,37 +928,62 @@ function switchTab(tab) {
 function openNewClient() { document.getElementById('new-client-modal').classList.add('open'); }
 function closeModal() { document.getElementById('new-client-modal').classList.remove('open'); }
 document.getElementById('new-client-modal').addEventListener('click', function(e){ if(e.target===this) closeModal(); });
-function createClient() {
+async function createClient() {
   const name=document.getElementById('nc-name').value.trim(), budget=document.getElementById('nc-budget').value.trim();
   if(!name) return;
-  const id='c'+Date.now();
-  state.clients.push({id,name,budget,props:[]});
-  closeModal();
-  document.getElementById('nc-name').value=''; document.getElementById('nc-budget').value='';
-  renderClientsGrid(); openClient(id);
+  showSpinner(true);
+  const data = await api('createClient', { name, budget });
+  showSpinner(false);
+  if(data.id) {
+    state.clients.unshift({ ...data, props: [] });
+    closeModal();
+    document.getElementById('nc-name').value=''; document.getElementById('nc-budget').value='';
+    renderClientsGrid(); openClient(data.id);
+  }
 }
-function addProperty() {
+async function addProperty() {
   const url=document.getElementById('new-url').value.trim(); if(!url) return;
   const c=state.clients.find(x=>x.id===state.currentClient);
-  c.props.push({id:'p'+Date.now(),url,price:document.getElementById('new-price').value.trim()||'—',addr:document.getElementById('new-addr').value.trim()||'—',rooms:document.getElementById('new-rooms').value.trim(),m2:document.getElementById('new-m2').value.trim(),floor:document.getElementById('new-floor').value.trim(),liked:false,comment:''});
-  ['new-url','new-price','new-addr','new-rooms','new-m2','new-floor'].forEach(id=>{document.getElementById(id).value='';});
-  renderPropsGrid('detail-props-grid',c.props,true); syncClientView(c);
+  const propData = {
+    client_id: state.currentClient, url,
+    price: document.getElementById('new-price').value.trim()||'—',
+    address: document.getElementById('new-addr').value.trim()||'—',
+    rooms: document.getElementById('new-rooms').value.trim(),
+    sqm: document.getElementById('new-m2').value.trim(),
+    floor_info: document.getElementById('new-floor').value.trim()
+  };
+  showSpinner(true);
+  const data = await api('addProperty', propData);
+  showSpinner(false);
+  if(data.id) {
+    c.props.push({id:data.id,url,price:propData.price,addr:propData.address,rooms:propData.rooms,m2:propData.sqm,floor:propData.floor_info,liked:false,comment:''});
+    ['new-url','new-price','new-addr','new-rooms','new-m2','new-floor'].forEach(id=>{document.getElementById(id).value='';});
+    renderPropsGrid('detail-props-grid',c.props,true); syncClientView(c);
+    // update count
+    c.prop_count = c.props.length;
+  }
 }
-function removeProp(pid) {
+async function removeProp(pid) {
+  if(!confirm('¿Eliminar esta propiedad?')) return;
+  showSpinner(true);
+  await api('deleteProperty', { id: pid });
+  showSpinner(false);
   const c=state.clients.find(x=>x.id===state.currentClient);
   c.props=c.props.filter(p=>p.id!==pid);
   renderPropsGrid('detail-props-grid',c.props,true); syncClientView(c);
 }
-function toggleLike(pid) {
+async function toggleLike(pid) {
   const c=state.currentClient?state.clients.find(x=>x.id===state.currentClient):state.clients[0];
   const p=c.props.find(x=>x.id===pid); if(!p) return;
   p.liked=!p.liked;
   const btn=document.querySelector(`#card-${pid} .fav-btn`); if(btn) btn.classList.toggle('liked');
+  await api('updateProperty', { id: pid, liked: p.liked });
 }
-function saveComment(pid,val) {
+async function saveComment(pid,val) {
   const c=state.currentClient?state.clients.find(x=>x.id===state.currentClient):state.clients[0];
   const p=c.props.find(x=>x.id===pid); if(!p) return;
   p.comment=val;
+  await api('updateProperty', { id: pid, comment: val });
   const saved=document.getElementById('saved-'+pid);
   if(saved){saved.style.display='flex'; setTimeout(()=>{saved.style.display='none';},2000);}
 }
@@ -1032,8 +1119,31 @@ function renderMapC(dayV, hlId) {
 
 // Init
 setLang('es');
-renderClientsGrid();
-renderCal();
+
+// Check if opened as client view (?client=ID)
+const urlParams = new URLSearchParams(window.location.search);
+const clientParam = urlParams.get('client');
+
+async function init() {
+  await loadClients();
+  await loadVisits();
+  renderCal();
+
+  if(clientParam) {
+    // Client view: hide agent tabs, show only client view
+    document.getElementById('tab-agent').style.display='none';
+    document.getElementById('tab-visits').style.display='none';
+    switchTab('client');
+    const c = state.clients.find(x=>x.id===clientParam);
+    if(c) {
+      state.currentClient = clientParam;
+      await loadProperties(clientParam);
+      syncClientView(c);
+    }
+  }
+}
+
+init();
 </script>
 </body>
 </html>
