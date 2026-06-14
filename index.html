@@ -301,6 +301,9 @@
           <input type="text" class="input-m2" id="new-m2">
           <input type="text" class="input-floor" id="new-floor">
         </div>
+        <div class="input-row" style="margin-top:8px">
+          <input type="text" id="new-photo" style="flex:1" placeholder="">
+        </div>
       </div>
       <div class="props-grid" id="detail-props-grid"></div>
     </div>
@@ -469,7 +472,7 @@ const LANGS = {
     visitsTitle:'Visitas', visitsSub:(n)=>`${n} programada${n!==1?'s':''}`, clientVisitsTitle:'Mis visitas programadas', calTitleC:'Calendario', routeTitleC:'Ruta del día',
     calTitle:'Calendario', routeTitle:'Ruta del día',
     addVisit:'Agregar visita', vCancel:'Cancelar', vSave:'Guardar',
-    fAddrPh:'Dirección (ej: Av. Libertador 1500)', fClientPh:'Cliente', fUrlPh:'Enlace propiedad (opcional)',
+    fAddrPh:'Dirección (ej: Av. Libertador 1500)', fPhotoPh:'URL de foto (click derecho → copiar dirección de imagen)', fClientPh:'Cliente', fUrlPh:'Enlace propiedad (opcional)',
     noVisits:'Sin visitas este día',
     MONTHS:['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'],
     DAYS:['Lu','Ma','Mi','Ju','Vi','Sa','Do'],
@@ -496,7 +499,7 @@ const LANGS = {
     visitsTitle:'Visits', visitsSub:(n)=>`${n} scheduled`, clientVisitsTitle:'My scheduled visits', calTitleC:'Calendar', routeTitleC:'Route for the day',
     calTitle:'Calendar', routeTitle:'Route for the day',
     addVisit:'Add visit', vCancel:'Cancel', vSave:'Save',
-    fAddrPh:'Address (e.g. Av. Libertador 1500)', fClientPh:'Client', fUrlPh:'Property link (optional)',
+    fAddrPh:'Address (e.g. Av. Libertador 1500)', fPhotoPh:'Photo URL (right click image → copy image address)', fClientPh:'Client', fUrlPh:'Property link (optional)',
     noVisits:'No visits on this day',
     MONTHS:['January','February','March','April','May','June','July','August','September','October','November','December'],
     DAYS:['Mo','Tu','We','Th','Fr','Sa','Su'],
@@ -523,7 +526,7 @@ const LANGS = {
     visitsTitle:'Визиты', visitsSub:(n)=>`${n} запланиров${n===1?'ан':'ано'}`, clientVisitsTitle:'Мои запланированные визиты', calTitleC:'Календарь', routeTitleC:'Маршрут дня',
     calTitle:'Календарь', routeTitle:'Маршрут дня',
     addVisit:'Добавить визит', vCancel:'Отмена', vSave:'Сохранить',
-    fAddrPh:'Адрес (напр. Av. Libertador 1500)', fClientPh:'Клиент', fUrlPh:'Ссылка на объект (опц.)',
+    fAddrPh:'Адрес (напр. Av. Libertador 1500)', fPhotoPh:'URL фото (правая кнопка → копировать адрес изображения)', fClientPh:'Клиент', fUrlPh:'Ссылка на объект (опц.)',
     noVisits:'Визитов в этот день нет',
     MONTHS:['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'],
     DAYS:['Пн','Вт','Ср','Чт','Пт','Сб','Вс'],
@@ -691,7 +694,7 @@ function applyTranslations() {
   set('lbl-add-visit', Lx.addVisit);
   set('lbl-v-cancel', Lx.vCancel);
   set('lbl-v-save', Lx.vSave);
-  ph('f-addr', Lx.fAddrPh); ph('f-client', Lx.fClientPh); ph('f-url', Lx.fUrlPh);
+  ph('f-addr', Lx.fAddrPh); ph('f-client', Lx.fClientPh); ph('f-url', Lx.fUrlPh); ph('new-photo', Lx.fPhotoPh||'URL de foto');
   const ccEl = document.getElementById('client-count'); if(ccEl) set('client-count-lbl', Lx.heroLbl(parseInt(ccEl.textContent)||0));
 }
 
@@ -1053,17 +1056,28 @@ async function addProperty() {
   showSpinner(false);
   console.log('addProperty response:', data);
   if(data.id) {
-    const newProp = {id:data.id,url,price:propData.price,addr:propData.address,rooms:propData.rooms,m2:propData.sqm,floor:propData.floor_info,liked:false,comment:'',image_url:''};
+    const photoUrl = document.getElementById('new-photo').value.trim();
+    const newProp = {id:data.id,url,price:propData.price,addr:propData.address,rooms:propData.rooms,m2:propData.sqm,floor:propData.floor_info,liked:false,comment:'',image_url:photoUrl};
     c.props.push(newProp);
-    ['new-url','new-price','new-addr','new-rooms','new-m2','new-floor'].forEach(id=>{document.getElementById(id).value='';});
+    if(photoUrl) imageCache[data.id] = photoUrl;
+    ['new-url','new-price','new-addr','new-rooms','new-m2','new-floor','new-photo'].forEach(id=>{document.getElementById(id).value='';});
     renderPropsGrid('detail-props-grid',c.props,true); syncClientView(c);
     c.prop_count = c.props.length;
-    // Fetch and save image in background
-    fetchOgImage(url, data.id).then(imgUrl => {
-      if(imgUrl) {
-        api('updateProperty', { id: data.id, image_url: imgUrl });
-      }
-    });
+    // Save photo URL if provided manually, otherwise try auto-fetch
+    if(photoUrl) {
+      api('updateProperty', { id: data.id, image_url: photoUrl });
+    } else {
+      fetchOgImage(url, data.id).then(imgUrl => {
+        if(imgUrl) {
+          imageCache[data.id] = imgUrl;
+          api('updateProperty', { id: data.id, image_url: imgUrl });
+          const el = document.getElementById('thumb-img-' + data.id);
+          if(el) { el.src = imgUrl; el.style.display='block'; }
+          const ld = document.getElementById('thumb-load-' + data.id);
+          if(ld) ld.style.display='none';
+        }
+      });
+    }
   }
 }
 async function removeProp(pid) {
