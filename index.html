@@ -633,7 +633,7 @@ function applyTranslations() {
   set('tab-visits', Lx.tabVisits);
   set('tab-client', Lx.tabClient);
   set('lbl-my-clients-title', Lx.myClients);
-  set('lbl-clients-sub', Lx.clientsSub(state.clients.length));
+  if(document.getElementById('lbl-clients-sub')) set('lbl-clients-sub', Lx.clientsSub(state.clients.length));
   set('lbl-new-client', Lx.newClient);
   set('lbl-all-clients', Lx.allClients);
   set('lbl-copy', Lx.copy);
@@ -663,7 +663,7 @@ function applyTranslations() {
   set('lbl-v-cancel', Lx.vCancel);
   set('lbl-v-save', Lx.vSave);
   ph('f-addr', Lx.fAddrPh); ph('f-client', Lx.fClientPh); ph('f-url', Lx.fUrlPh);
-  set('client-count-lbl', Lx.heroLbl(parseInt(document.getElementById('client-count').textContent)||0));
+  const ccEl = document.getElementById('client-count'); if(ccEl) set('client-count-lbl', Lx.heroLbl(parseInt(ccEl.textContent)||0));
 }
 
 /* ---- CALENDAR ---- */
@@ -672,7 +672,7 @@ function nextMonth() { calMonth++; if(calMonth>11){calMonth=0;calYear++;} render
 
 function renderCal() {
   const Lx = L();
-  document.getElementById('cal-month-lbl').textContent = `${Lx.MONTHS[calMonth]} ${calYear}`;
+  const cml = document.getElementById('cal-month-lbl'); if(cml) cml.textContent = `${Lx.MONTHS[calMonth]} ${calYear}`;
   const datesWithVisits = new Set(visits.map(v=>v.date));
   const first = new Date(calYear, calMonth, 1);
   const startDow = (first.getDay()+6)%7;
@@ -1117,20 +1117,23 @@ function renderMapC(dayV, hlId) {
   `;
 }
 
-// Init
-setLang('es');
-
 // Check if opened as client view (?client=ID)
 const urlParams = new URLSearchParams(window.location.search);
 const clientParam = urlParams.get('client');
 
 async function init() {
+  // Apply language now that DOM is ready
+  setLang(localStorage.getItem('lang') || 'es');
+
+  // Show loading spinner
+  const grid = document.getElementById('clients-grid');
+  if(grid) grid.innerHTML = '<div class="empty" style="grid-column:1/-1"><div style="width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 12px"></div><p>Cargando...</p></div>';
+
   await loadClients();
   await loadVisits();
   renderCal();
 
   if(clientParam) {
-    // Client view: hide agent tabs, show only client view
     document.getElementById('tab-agent').style.display='none';
     document.getElementById('tab-visits').style.display='none';
     switchTab('client');
@@ -1143,7 +1146,7 @@ async function init() {
   }
 }
 
-init();
+document.addEventListener('DOMContentLoaded', init);
 </script>
 </body>
 </html>
