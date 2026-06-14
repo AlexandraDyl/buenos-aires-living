@@ -538,18 +538,35 @@ let lang = 'es';
 let state = { clients: [], currentClient: null, filter: 'all' };
 let visits = [];
 
-/* ---- API ---- */
-async function api(action, data={}) {
-  try {
-    const res = await fetch(API_URL, {
-      method: 'POST',
-      body: JSON.stringify({ action, ...data })
-    });
-    return await res.json();
-  } catch(e) {
-    console.error('API error', e);
-    return { error: e.toString() };
+/* ---- API via JSONP (avoids CORS) ---- */
+function api(action, data={}) {
+  return new Promise((resolve) => {
+    const cbName = 'cb_' + Date.now() + '_' + Math.random().toString(36).slice(2);
+    const params = new URLSearchParams({ action, callback: cbName, ...flattenData(data) });
+    const script = document.createElement('script');
+    const timeout = setTimeout(() => {
+      cleanup();
+      console.error('API timeout:', action);
+      resolve({ error: 'timeout' });
+    }, 15000);
+    function cleanup() {
+      clearTimeout(timeout);
+      delete window[cbName];
+      if(script.parentNode) script.parentNode.removeChild(script);
+    }
+    window[cbName] = (result) => { cleanup(); resolve(result); };
+    script.src = API_URL + '?' + params.toString();
+    script.onerror = () => { cleanup(); resolve({ error: 'script error' }); };
+    document.head.appendChild(script);
+  });
+}
+
+function flattenData(data) {
+  const out = {};
+  for(const [k,v] of Object.entries(data)) {
+    out[k] = typeof v === 'object' ? JSON.stringify(v) : v;
   }
+  return out;
 }
 
 function showSpinner(show) {
