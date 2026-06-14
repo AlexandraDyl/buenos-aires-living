@@ -596,18 +596,22 @@ async function loadClients() {
 async function loadProperties(clientId) {
   console.log('loadProperties called with:', clientId);
   const data = await api('getProperties', { clientId });
-  console.log('loadProperties response:', data);
+  console.log('loadProperties response:', JSON.stringify(data));
   if(Array.isArray(data)) {
     const c = state.clients.find(x=>x.id===clientId);
     if(c) {
       c.props = data.map(p => ({
-        id: p.id, url: p.url, price: p.price, addr: p.address,
-        rooms: p.rooms, m2: p.sqm, floor: p.floor_info,
-        liked: p.liked === true || p.liked === 'TRUE',
-        comment: p.comment || '',
-        image_url: p.image_url || ''
+        id: String(p.id), 
+        url: String(p.url||''), 
+        price: String(p.price||'—'), 
+        addr: String(p.address||p.addr||'—'),
+        rooms: String(p.rooms||''), 
+        m2: String(p.sqm||p.m2||''), 
+        floor: String(p.floor_info||p.floor||''),
+        liked: p.liked === true || p.liked === 'TRUE' || p.liked === 'true',
+        comment: String(p.comment||''),
+        image_url: String(p.image_url||'')
       }));
-      // Pre-populate image cache
       c.props.forEach(p => { if(p.image_url) imageCache[p.id] = p.image_url; });
     }
   }
@@ -876,46 +880,35 @@ const imageCache = {};
 
 async function fetchOgImage(url, propId) {
   if(imageCache[propId]) return imageCache[propId];
-
-  // Try multiple proxies in order
-  const proxies = [
-    u => `https://corsproxy.io/?${encodeURIComponent(u)}`,
-    u => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}`,
-    u => `https://api.allorigins.win/get?url=${encodeURIComponent(u)}`,
-  ];
-
-  for(const makeUrl of proxies) {
-    try {
-      const res = await fetch(makeUrl(url), { signal: AbortSignal.timeout(8000) });
-      let html = '';
-      const ct = res.headers.get('content-type') || '';
-      if(ct.includes('json')) {
-        const data = await res.json();
-        html = data.contents || data.body || '';
-      } else {
-        html = await res.text();
-      }
-      if(!html) continue;
-
-      // Try og:image
-      let match = html.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/) ||
-                  html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/);
-      if(!match) {
-        match = html.match(/<meta[^>]+name=["']twitter:image["'][^>]+content=["']([^"']+)["']/) ||
-                html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+name=["']twitter:image["']/);
-      }
+  try {
+    // Use allorigins which returns JSON with contents field
+    const proxyUrl = 'https://api.allorigins.win/get?url=' + encodeURIComponent(url);
+    const res = await fetch(proxyUrl, { signal: AbortSignal.timeout(12000) });
+    if(!res.ok) throw new Error('proxy ' + res.status);
+    const json = await res.json();
+    const html = json.contents || '';
+    if(!html) throw new Error('empty response');
+    
+    const patterns = [
+      /<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i,
+      /<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i,
+      /<meta[^>]+name=["']twitter:image["'][^>]+content=["']([^"']+)["']/i,
+      /<meta[^>]+content=["']([^"']+)["'][^>]+name=["']twitter:image["']/i,
+      /<meta[^>]+property=["']og:image:url["'][^>]+content=["']([^"']+)["']/i,
+    ];
+    
+    for(const pattern of patterns) {
+      const match = html.match(pattern);
       if(match && match[1]) {
-        let imgUrl = match[1].replace(/&amp;/g,'&').trim();
+        let imgUrl = match[1].replace(/&amp;/g,'&').replace(/&#x3A;/g,':').trim();
         if(imgUrl.startsWith('//')) imgUrl = 'https:' + imgUrl;
         if(imgUrl.startsWith('http')) {
           imageCache[propId] = imgUrl;
-          console.log('Image found via proxy:', imgUrl.slice(0,60));
           return imgUrl;
         }
       }
-    } catch(e) { console.log('Proxy failed:', e.message); }
-  }
-  console.log('No image found for:', url.slice(0,60));
+    }
+  } catch(e) { /* silent */ }
   return null;
 }
 
