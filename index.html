@@ -1213,7 +1213,7 @@ function setFilter(f,el) {
 }
 function copyLink() {
   const txt=document.getElementById('detail-link').textContent;
-  navigator.clipboard&&navigator.clipboard.writeText('https://'+txt);
+  navigator.clipboard&&navigator.clipboard.writeText(txt);
   const lbl=document.getElementById('lbl-copy'); if(lbl){lbl.textContent=t('copied'); setTimeout(()=>{lbl.textContent=t('copy');},2000);}
 }
 
