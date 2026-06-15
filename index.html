@@ -320,6 +320,13 @@
           <input type="text" id="new-photo" style="flex:1" placeholder="">
         </div>
       </div>
+      <div style="display:flex;gap:8px;margin-bottom:1.25rem;flex-wrap:wrap" id="agent-filter-bar">
+        <div class="pill active" id="agent-pill-all" onclick="setAgentFilter('all',this)"><span id="lbl-agent-all">Todas</span></div>
+        <div class="pill" id="agent-pill-liked" onclick="setAgentFilter('liked',this)">
+          <svg viewBox="0 0 24 24" fill="currentColor" style="width:13px;height:13px"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+          <span id="lbl-agent-liked">Favoritos del cliente</span>
+        </div>
+      </div>
       <div class="props-grid" id="detail-props-grid"></div>
     </div>
   </div>
@@ -521,7 +528,7 @@ const LANGS = {
     viewPortal:'Ver en portal', commentPh:'Agregar comentario...',
     saved:'Guardado', noProps:'No hay propiedades aún.', noClients:'Todavía no hay clientes. ¡Creá el primero!',
     propCount:(n)=>`${n} prop.`,
-    visitsTitle:'Visitas', visitsSub:(n)=>`${n} programada${n!==1?'s':''}`, clientVisitsTitle:'Mis visitas programadas', calTitleC:'Calendario', routeTitleC:'Ruta del día',
+    agentLiked:'Favoritos del cliente', visitsTitle:'Visitas', visitsSub:(n)=>`${n} programada${n!==1?'s':''}`, clientVisitsTitle:'Mis visitas programadas', calTitleC:'Calendario', routeTitleC:'Ruta del día',
     calTitle:'Calendario', routeTitle:'Ruta del día',
     addVisit:'Agregar visita', vCancel:'Cancelar', vSave:'Guardar',
     fAddrPh:'Dirección (ej: Av. Libertador 1500)', fPhotoPh:'URL de foto (click derecho → copiar dirección de imagen)', fClientPh:'Cliente', fUrlPh:'Enlace propiedad (opcional)',
@@ -548,7 +555,7 @@ const LANGS = {
     viewPortal:'View listing', commentPh:'Add a comment...',
     saved:'Saved', noProps:'No properties yet.', noClients:'No clients yet. Create the first one!',
     propCount:(n)=>`${n} prop.`,
-    visitsTitle:'Visits', visitsSub:(n)=>`${n} scheduled`, clientVisitsTitle:'My scheduled visits', calTitleC:'Calendar', routeTitleC:'Route for the day',
+    agentLiked:'Client favorites', visitsTitle:'Visits', visitsSub:(n)=>`${n} scheduled`, clientVisitsTitle:'My scheduled visits', calTitleC:'Calendar', routeTitleC:'Route for the day',
     calTitle:'Calendar', routeTitle:'Route for the day',
     addVisit:'Add visit', vCancel:'Cancel', vSave:'Save',
     fAddrPh:'Address (e.g. Av. Libertador 1500)', fPhotoPh:'Photo URL (right click image → copy image address)', fClientPh:'Client', fUrlPh:'Property link (optional)',
@@ -575,7 +582,7 @@ const LANGS = {
     viewPortal:'Открыть на портале', commentPh:'Добавить комментарий...',
     saved:'Сохранено', noProps:'Нет объектов.', noClients:'Клиентов пока нет. Создайте первого!',
     propCount:(n)=>`${n} об.`,
-    visitsTitle:'Визиты', visitsSub:(n)=>`${n} запланиров${n===1?'ан':'ано'}`, clientVisitsTitle:'Мои запланированные визиты', calTitleC:'Календарь', routeTitleC:'Маршрут дня',
+    agentLiked:'Избранное клиента', visitsTitle:'Визиты', visitsSub:(n)=>`${n} запланиров${n===1?'ан':'ано'}`, clientVisitsTitle:'Мои запланированные визиты', calTitleC:'Календарь', routeTitleC:'Маршрут дня',
     calTitle:'Календарь', routeTitle:'Маршрут дня',
     addVisit:'Добавить визит', vCancel:'Отмена', vSave:'Сохранить',
     fAddrPh:'Адрес (напр. Av. Libertador 1500)', fPhotoPh:'URL фото (правая кнопка → копировать адрес изображения)', fClientPh:'Клиент', fUrlPh:'Ссылка на объект (опц.)',
@@ -746,6 +753,8 @@ function applyTranslations() {
   set('lbl-cal-title-c', Lx.calTitleC);
   set('lbl-route-title-c', Lx.routeTitleC);
   set('lbl-add-visit', Lx.addVisit);
+  set('lbl-agent-all', Lx.all||'Todas');
+  set('lbl-agent-liked', Lx.agentLiked||'Favoritos del cliente');
   set('lbl-v-cancel', Lx.vCancel);
   set('lbl-v-save', Lx.vSave);
   ph('f-addr', Lx.fAddrPh); ph('f-client', Lx.fClientPh); ph('f-url', Lx.fUrlPh); ph('new-photo', Lx.fPhotoPh||'URL de foto');
@@ -1044,7 +1053,8 @@ async function loadPropImages(props) {
 
 function renderPropsGrid(containerId, props, isAgent) {
   const g = document.getElementById(containerId); if(!g) return;
-  const filtered = state.filter==='liked' ? props.filter(p=>p.liked) : props;
+  const filterToUse = isAgent ? agentFilter : state.filter;
+  const filtered = filterToUse==='liked' ? props.filter(p=>p.liked) : props;
   if(!filtered.length){ g.innerHTML=`<div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg><p>${t('noProps')}</p></div>`; return; }
   const propsToRender = filtered;
   g.innerHTML = propsToRender.map(p=>`
@@ -1254,6 +1264,16 @@ async function saveClientComment(pid,val) {
   const saved=document.getElementById('saved-'+pid);
   if(saved){saved.style.display='flex'; setTimeout(()=>{saved.style.display='none';},2000);}
 }
+let agentFilter = 'all';
+
+function setAgentFilter(f, el) {
+  agentFilter = f;
+  document.querySelectorAll('#agent-filter-bar .pill').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  const c = state.currentClient ? state.clients.find(x=>x.id===state.currentClient) : null;
+  if(c) renderPropsGrid('detail-props-grid', c.props, true);
+}
+
 function setFilter(f,el) {
   state.filter=f;
   document.querySelectorAll('.filter-pills .pill').forEach(p=>p.classList.remove('active')); el.classList.add('active');
