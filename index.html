@@ -665,6 +665,8 @@ async function loadProperties(clientId) {
         floor: String(p.floor_info||p.floor||''),
         liked: p.liked === true || p.liked === 'TRUE' || p.liked === 'true',
         comment: String(p.comment||''),
+        agent_comment: String(p.agent_comment||''),
+        client_comment: String(p.client_comment||''),
         image_url: String(p.image_url||'')
       }));
       c.props.forEach(p => { if(p.image_url) imageCache[p.id] = p.image_url; });
@@ -1068,7 +1070,32 @@ function renderPropsGrid(containerId, props, isAgent) {
           <a href="${p.url}" target="_blank" class="btn btn-sm"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>${t('viewPortal')}</a>
           ${isAgent?`<button class="btn btn-sm btn-ghost" onclick="openEditProp('${p.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button><button class="btn btn-sm btn-danger-ghost" onclick="removeProp('${p.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></button>`:''}
         </div>
-        <textarea class="prop-comment" placeholder="${t('commentPh')}" onblur="saveComment('${p.id}',this.value)">${p.comment}</textarea>
+        ${isAgent ? `
+          <div style="display:flex;flex-direction:column;gap:8px;margin-top:6px">
+            <div>
+              <div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px">🔒 Nota interna</div>
+              <textarea class="prop-comment" style="min-height:52px" placeholder="Solo la ves vos..." onblur="saveAgentComment('${p.id}',this.value)">${p.comment||''}</textarea>
+            </div>
+            <div>
+              <div style="font-size:11px;font-weight:600;color:var(--accent);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px">💬 Comentario para el cliente</div>
+              <textarea class="prop-comment" style="min-height:52px;border-color:var(--accent-light)" placeholder="El cliente verá esto..." onblur="saveAgentForClient('${p.id}',this.value)">${p.agent_comment||''}</textarea>
+            </div>
+            ${p.client_comment ? `
+            <div>
+              <div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px">⭐ Comentario del cliente</div>
+              <div style="font-size:13px;padding:8px 10px;background:var(--accent-light);border-radius:var(--radius-sm);color:var(--accent-text);border-left:3px solid var(--accent)">${p.client_comment}</div>
+            </div>` : ''}
+          </div>
+        ` : `
+          <div style="margin-top:6px">
+            ${p.agent_comment ? `
+            <div style="font-size:11px;font-weight:600;color:var(--accent);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px">Nota del agente</div>
+            <div style="font-size:13px;padding:8px 10px;background:var(--accent-light);border-radius:var(--radius-sm);color:var(--accent-text);border-left:3px solid var(--accent);margin-bottom:8px">${p.agent_comment}</div>
+            ` : ''}
+            <div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px">Mi comentario</div>
+            <textarea class="prop-comment" style="min-height:52px" placeholder="${t('commentPh')}" onblur="saveClientComment('${p.id}',this.value)">${p.client_comment||''}</textarea>
+          </div>
+        `}
         <div class="saved-msg" id="saved-${p.id}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 12 4 12"/></svg>${t('saved')}</div>
       </div>
     </div>`).join('');
@@ -1158,7 +1185,7 @@ async function addProperty() {
   console.log('addProperty response:', data);
   if(data.id) {
     const photoUrl = document.getElementById('new-photo').value.trim();
-    const newProp = {id:data.id,url,price:propData.price,addr:propData.address,rooms:propData.rooms,m2:propData.sqm,floor:propData.floor_info,liked:false,comment:'',image_url:photoUrl};
+    const newProp = {id:data.id,url,price:propData.price,addr:propData.address,rooms:propData.rooms,m2:propData.sqm,floor:propData.floor_info,liked:false,comment:'',agent_comment:'',client_comment:'',image_url:photoUrl};
     c.props.push(newProp);
     if(photoUrl) imageCache[data.id] = photoUrl;
     ['new-url','new-price','new-addr','new-rooms','new-m2','new-floor','new-photo'].forEach(id=>{document.getElementById(id).value='';});
@@ -1198,10 +1225,32 @@ async function toggleLike(pid) {
   await api('updateProperty', { id: pid, liked: p.liked });
 }
 async function saveComment(pid,val) {
+  await saveAgentComment(pid,val);
+}
+
+async function saveAgentComment(pid,val) {
   const c=state.currentClient?state.clients.find(x=>x.id===state.currentClient):state.clients[0];
-  const p=c.props.find(x=>x.id===pid); if(!p) return;
+  const p=c&&c.props.find(x=>x.id===pid); if(!p) return;
   p.comment=val;
   await api('updateProperty', { id: pid, comment: val });
+  const saved=document.getElementById('saved-'+pid);
+  if(saved){saved.style.display='flex'; setTimeout(()=>{saved.style.display='none';},2000);}
+}
+
+async function saveAgentForClient(pid,val) {
+  const c=state.currentClient?state.clients.find(x=>x.id===state.currentClient):state.clients[0];
+  const p=c&&c.props.find(x=>x.id===pid); if(!p) return;
+  p.agent_comment=val;
+  await api('updateProperty', { id: pid, agent_comment: val });
+  const saved=document.getElementById('saved-'+pid);
+  if(saved){saved.style.display='flex'; setTimeout(()=>{saved.style.display='none';},2000);}
+}
+
+async function saveClientComment(pid,val) {
+  const c=state.currentClient?state.clients.find(x=>x.id===state.currentClient):state.clients[0];
+  const p=c&&c.props.find(x=>x.id===pid); if(!p) return;
+  p.client_comment=val;
+  await api('updateProperty', { id: pid, client_comment: val });
   const saved=document.getElementById('saved-'+pid);
   if(saved){saved.style.display='flex'; setTimeout(()=>{saved.style.display='none';},2000);}
 }
