@@ -1237,8 +1237,7 @@ function renderPropsGrid(containerId, props, isAgent) {
     <div class="prop-card" id="card-${p.id}">
       <div class="prop-thumb">
         <div class="prop-thumb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>
-        <img id="thumb-img-${p.id}" src="" alt="" style="display:none">
-        <div class="prop-thumb-loading" id="thumb-load-${p.id}"></div>
+        ${p.image_url ? `<img src="${p.image_url}" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover" onerror="this.style.display='none'">` : ''}
         ${sourceBadge(p.url)}
         <div class="fav-btn ${p.liked?'liked':''}" onclick="toggleLike('${p.id}')">
           <svg viewBox="0 0 24 24" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
@@ -1289,9 +1288,7 @@ function renderPropsGrid(containerId, props, isAgent) {
         <div class="saved-msg" id="saved-${p.id}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 12 4 12"/></svg>${t('saved')}</div>
       </div>
     </div>`).join('');
-  // Load photos (only for agent view - client view handled by syncClientView)
-  if(!isAgent) return;
-  setTimeout(() => loadPropImages(propsToRender), 30);
+
 }
 
 async function openClient(id) {
@@ -1354,8 +1351,7 @@ function syncClientView(c) {
   }
 
   renderPropsGrid('client-props-grid', c.props, false);
-  // Always reload images after render
-  setTimeout(() => loadPropImages(c.props), 30);
+
   const clientVisitsCount = visits.filter(v=>v.client===c.name).length;
   const visSection = document.getElementById('client-visits-section');
   if(visSection) visSection.style.display = clientVisitsCount ? 'block' : 'none';
@@ -1366,7 +1362,7 @@ function rerenderCurrent() {
   else renderClientsGrid();
   const av=document.querySelector('.view.active');
   if(av&&av.id==='view-client'){ const c=state.currentClient?state.clients.find(x=>x.id===state.currentClient):state.clients[0]; if(c){syncClientView(c);} }
-  // Images are reloaded by syncClientView and renderPropsGrid
+
 }
 function switchTab(tab) {
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
