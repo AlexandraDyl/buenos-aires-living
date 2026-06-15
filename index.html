@@ -294,6 +294,18 @@
 </style>
 </head>
 <body>
+<script>
+// Immediately hide agent UI if this is a client link
+(function() {
+  const p = new URLSearchParams(window.location.search).get('client');
+  if(p) {
+    const style = document.createElement('style');
+    style.id = 'client-mode-style';
+    style.textContent = '#view-agent,#view-visits,#tab-agent,#tab-visits,#tab-client{display:none!important}#view-client{display:block!important}.topnav .tab-toggle{display:none!important}.lang-group{margin-left:auto}';
+    document.head && document.head.appendChild(style) || document.addEventListener('DOMContentLoaded', () => document.head.appendChild(style));
+  }
+})();
+</script>
 
 <nav class="topnav">
   <div class="logo">
@@ -1817,14 +1829,28 @@ async function init() {
   renderCal();
 
   if(clientParam) {
+    // Remove the temporary hiding style
+    const tempStyle = document.getElementById('client-mode-style');
+    if(tempStyle) tempStyle.remove();
+
+    // Hide nav tabs permanently for client
     document.getElementById('tab-agent').style.display='none';
     document.getElementById('tab-visits').style.display='none';
+
     switchTab('client');
     const c = state.clients.find(x=>x.id===clientParam);
     if(c) {
       state.currentClient = clientParam;
       await loadProperties(clientParam);
       syncClientView(c);
+    } else {
+      // Client not found
+      document.getElementById('view-client').innerHTML = `
+        <div style="text-align:center;padding:4rem 2rem;color:var(--text3)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:48px;height:48px;margin-bottom:12px;opacity:0.4"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <p style="font-size:16px">Catálogo no encontrado.</p>
+          <p style="font-size:13px;margin-top:6px">Verificá el enlace con tu agente.</p>
+        </div>`;
     }
   }
 }
