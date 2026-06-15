@@ -1170,28 +1170,48 @@ async function fetchOgImage(url, propId) {
   return null;
 }
 
+function showPropImage(propId, imgUrl) {
+  const el = document.getElementById('thumb-img-' + propId);
+  const loader = document.getElementById('thumb-load-' + propId);
+  if(el && imgUrl) {
+    el.onload = () => { el.style.display='block'; if(loader) loader.style.display='none'; };
+    el.onerror = () => { el.style.display='none'; if(loader) loader.style.display='none'; };
+    el.src = imgUrl;
+  } else {
+    if(loader) loader.style.display='none';
+  }
+}
+
 async function loadPropImages(props) {
-  await Promise.all(props.map(async (p) => {
-    if(imageCache[p.id]) {
-      const el = document.getElementById('thumb-img-' + p.id);
-      if(el) { el.src = imageCache[p.id]; el.style.display='block'; }
-      const loader = document.getElementById('thumb-load-' + p.id);
-      if(loader) loader.style.display='none';
+  props.forEach(p => {
+    // Use saved image_url first (from Sheets)
+    if(p.image_url) {
+      imageCache[p.id] = p.image_url;
+      showPropImage(p.id, p.image_url);
       return;
     }
-    const imgUrl = await fetchOgImage(p.url, p.id);
-    if(imgUrl) {
-      const el = document.getElementById('thumb-img-' + p.id);
-      if(el) {
-        el.onload = () => { el.style.display='block'; const l=document.getElementById('thumb-load-'+p.id); if(l)l.style.display='none'; };
-        el.onerror = () => { el.style.display='none'; const l=document.getElementById('thumb-load-'+p.id); if(l)l.style.display='none'; };
-        el.src = imgUrl;
-      }
-    } else {
-      const loader = document.getElementById('thumb-load-' + p.id);
-      if(loader) loader.style.display='none';
+    // Use cache if available
+    if(imageCache[p.id]) {
+      showPropImage(p.id, imageCache[p.id]);
+      return;
     }
-  }));
+    // Hide loader if no image
+    const loader = document.getElementById('thumb-load-' + p.id);
+    if(loader) loader.style.display='none';
+  });
+
+  // Try to fetch missing images in background (agent only)
+  const missing = props.filter(p => !p.image_url && !imageCache[p.id]);
+  if(missing.length > 0) {
+    missing.forEach(async p => {
+      const imgUrl = await fetchOgImage(p.url, p.id);
+      if(imgUrl) {
+        showPropImage(p.id, imgUrl);
+        // Save to sheets
+        api('updateProperty', { id: p.id, image_url: imgUrl });
+      }
+    });
+  }
 }
 
 function renderPropsGrid(containerId, props, isAgent) {
