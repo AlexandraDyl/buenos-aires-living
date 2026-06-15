@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-<style>.leaflet-control-attribution { display: none !important; } .leaflet-control-container .leaflet-bottom { display: none !important; }</style>
+<style>.leaflet-control-attribution,.leaflet-control-attribution a,.leaflet-bottom.leaflet-right { display:none!important;visibility:hidden!important;opacity:0!important; }</style>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Buenos Aires Living</title>
@@ -827,7 +827,7 @@ function getOrCreateLeafletMap(divId, mapRef) {
   if(!el) return null;
   if(mapRef) return mapRef;
   try {
-    const map = L.map(divId, { zoomControl: true }).setView([-34.61, -58.43], 13);
+    const map = L.map(divId, { zoomControl: true, attributionControl: false }).setView([-34.61, -58.43], 13);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '© OpenStreetMap',
       maxZoom: 19
