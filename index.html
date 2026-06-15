@@ -1289,8 +1289,9 @@ function renderPropsGrid(containerId, props, isAgent) {
         <div class="saved-msg" id="saved-${p.id}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 12 4 12"/></svg>${t('saved')}</div>
       </div>
     </div>`).join('');
-  // Load photos async
-  setTimeout(() => loadPropImages(propsToRender), 50);
+  // Load photos (only for agent view - client view handled by syncClientView)
+  if(!isAgent) return;
+  setTimeout(() => loadPropImages(propsToRender), 30);
 }
 
 async function openClient(id) {
@@ -1353,6 +1354,8 @@ function syncClientView(c) {
   }
 
   renderPropsGrid('client-props-grid', c.props, false);
+  // Always reload images after render
+  setTimeout(() => loadPropImages(c.props), 30);
   const clientVisitsCount = visits.filter(v=>v.client===c.name).length;
   const visSection = document.getElementById('client-visits-section');
   if(visSection) visSection.style.display = clientVisitsCount ? 'block' : 'none';
@@ -1363,11 +1366,7 @@ function rerenderCurrent() {
   else renderClientsGrid();
   const av=document.querySelector('.view.active');
   if(av&&av.id==='view-client'){ const c=state.currentClient?state.clients.find(x=>x.id===state.currentClient):state.clients[0]; if(c){syncClientView(c);} }
-  // Reload images after rerender
-  setTimeout(() => {
-    const c = state.currentClient ? state.clients.find(x=>x.id===state.currentClient) : state.clients[0];
-    if(c && c.props) loadPropImages(c.props);
-  }, 50);
+  // Images are reloaded by syncClientView and renderPropsGrid
 }
 function switchTab(tab) {
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
