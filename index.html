@@ -365,7 +365,9 @@
             </div>
             <input type="text" id="f-addr" style="width:100%">
             <div class="form-row">
-              <input type="text" id="f-client">
+              <select id="f-client" style="flex:1;padding:9px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;outline:none">
+                <option value="">— Seleccionar cliente —</option>
+              </select>
               <input type="text" id="f-url">
             </div>
             <div class="form-actions">
@@ -936,7 +938,25 @@ function renderMap(dayV, hlId) {
 function toggleVisitForm() {
   const f = document.getElementById('add-visit-form');
   f.classList.toggle('open');
-  if(f.classList.contains('open')) document.getElementById('f-date').value = selectedDate;
+  if(f.classList.contains('open')) {
+    document.getElementById('f-date').value = selectedDate;
+    // Populate client dropdown
+    const sel = document.getElementById('f-client');
+    const current = sel.value;
+    sel.innerHTML = '<option value="">— Seleccionar cliente —</option>';
+    state.clients.forEach(c => {
+      const opt = document.createElement('option');
+      opt.value = c.name;
+      opt.textContent = c.name;
+      if(c.name === current) opt.selected = true;
+      sel.appendChild(opt);
+    });
+    // Pre-select if currently viewing a client
+    if(state.currentClient) {
+      const c = state.clients.find(x=>x.id===state.currentClient);
+      if(c) sel.value = c.name;
+    }
+  }
 }
 
 async function saveVisit() {
