@@ -1358,11 +1358,22 @@ function syncClientView(c) {
   renderCalC(c.name);
 }
 function rerenderCurrent() {
-  if(state.currentClient){ const c=state.clients.find(x=>x.id===state.currentClient); if(c){renderPropsGrid('detail-props-grid',c.props,true);syncClientView(c);} }
-  else renderClientsGrid();
-  const av=document.querySelector('.view.active');
-  if(av&&av.id==='view-client'){ const c=state.currentClient?state.clients.find(x=>x.id===state.currentClient):state.clients[0]; if(c){syncClientView(c);} }
+  const av = document.querySelector('.view.active');
+  const isClientMode = av && av.id === 'view-client';
 
+  if(isClientMode) {
+    // Client view - only render client grid
+    const c = state.currentClient ? state.clients.find(x=>x.id===state.currentClient) : state.clients[0];
+    if(c) syncClientView(c);
+  } else {
+    // Agent view
+    if(state.currentClient) {
+      const c = state.clients.find(x=>x.id===state.currentClient);
+      if(c) renderPropsGrid('detail-props-grid', c.props, true);
+    } else {
+      renderClientsGrid();
+    }
+  }
 }
 function switchTab(tab) {
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
