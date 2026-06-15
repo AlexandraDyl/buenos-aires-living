@@ -461,6 +461,30 @@
 </div>
 
 <!-- MODAL -->
+<!-- SCHEDULE VISIT MODAL -->
+<div class="modal-overlay" id="schedule-visit-modal">
+  <div class="modal">
+    <div class="modal-title">Agendar visita</div>
+    <div id="sv-prop-info" style="background:var(--surface2);border-radius:var(--radius-sm);padding:10px 14px;margin-bottom:1rem;font-size:14px;color:var(--text2)"></div>
+    <div class="form-field">
+      <label>Fecha</label>
+      <input type="date" id="sv-date" style="width:100%">
+    </div>
+    <div class="form-field">
+      <label>Hora</label>
+      <input type="time" id="sv-time" value="10:00" style="width:100%">
+    </div>
+    <div class="form-field">
+      <label>Dirección de visita</label>
+      <input type="text" id="sv-addr" style="width:100%">
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeScheduleVisit()">Cancelar</button>
+      <button class="btn btn-primary" onclick="confirmScheduleVisit()">Agendar</button>
+    </div>
+  </div>
+</div>
+
 <!-- EDIT CLIENT MODAL -->
 <div class="modal-overlay" id="edit-client-modal">
   <div class="modal">
@@ -1098,6 +1122,10 @@ function renderPropsGrid(containerId, props, isAgent) {
         </div>
         <div class="prop-actions">
           <a href="${p.url}" target="_blank" class="btn btn-sm"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>${t('viewPortal')}</a>
+          ${isAgent && p.liked ? `<button class="btn btn-sm" onclick="scheduleVisitFromProp('${p.id}')" style="background:var(--accent-light);color:var(--accent-text);border-color:var(--accent-light)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            <span>Agendar visita</span>
+          </button>` : ''}
           ${isAgent?`<button class="btn btn-sm btn-ghost" onclick="openEditProp('${p.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button><button class="btn btn-sm btn-danger-ghost" onclick="removeProp('${p.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></button>`:''}
         </div>
         ${isAgent ? `
@@ -1308,6 +1336,63 @@ function copyLink() {
 
 
 
+
+
+/* ---- SCHEDULE VISIT FROM PROP ---- */
+let schedulingPropId = null;
+
+function scheduleVisitFromProp(pid) {
+  const c = state.currentClient ? state.clients.find(x=>x.id===state.currentClient) : null;
+  const p = c && c.props.find(x=>x.id===pid);
+  if(!p) return;
+  schedulingPropId = pid;
+
+  // Pre-fill info
+  const info = document.getElementById('sv-prop-info');
+  if(info) info.innerHTML = `<strong>${p.price}</strong> · ${p.addr}${p.rooms?' · '+p.rooms:''}`;
+
+  // Pre-fill address
+  document.getElementById('sv-addr').value = p.addr !== '—' ? p.addr : '';
+
+  // Pre-fill today's date
+  document.getElementById('sv-date').value = new Date().toISOString().split('T')[0];
+
+  document.getElementById('schedule-visit-modal').classList.add('open');
+}
+
+function closeScheduleVisit() {
+  document.getElementById('schedule-visit-modal').classList.remove('open');
+  schedulingPropId = null;
+}
+
+async function confirmScheduleVisit() {
+  const c = state.currentClient ? state.clients.find(x=>x.id===state.currentClient) : null;
+  const p = c && c.props.find(x=>x.id===schedulingPropId);
+  if(!p || !c) return;
+
+  const date = document.getElementById('sv-date').value;
+  const time = document.getElementById('sv-time').value;
+  const address = document.getElementById('sv-addr').value.trim();
+  if(!date || !address) return;
+
+  showSpinner(true);
+  const data = await api('addVisit', {
+    date, time, address,
+    client_name: c.name,
+    url: p.url
+  });
+  showSpinner(false);
+
+  if(data.id) {
+    visits.push({ id:data.id, date, time, addr:address, client:c.name, url:p.url, lat:data.lat, lng:data.lng });
+    closeScheduleVisit();
+    // Switch to visits tab to show it
+    switchTab('visits');
+    selectDate(date);
+  }
+}
+
+document.getElementById('schedule-visit-modal').addEventListener('click', function(e){ if(e.target===this) closeScheduleVisit(); });
 
 /* ---- EDIT CLIENT ---- */
 function openEditClient() {
