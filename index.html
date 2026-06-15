@@ -458,6 +458,7 @@
       <div class="client-hero-left">
         <h1 id="client-hero-title">Tu selección</h1>
         <p id="client-hero-sub"></p>
+        <div id="client-hero-chips" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px"></div>
       </div>
       <div class="client-hero-badge">
         <div class="num" id="client-count">0</div>
@@ -1325,6 +1326,20 @@ function syncClientView(c) {
   document.getElementById('client-count').textContent=c.props.length;
   document.getElementById('client-count-lbl').textContent=Lx.heroLbl(c.props.length);
   document.getElementById('autosave-note').style.display='flex';
+
+  // Show client description chips
+  const chipsEl = document.getElementById('client-hero-chips');
+  if(chipsEl) {
+    const chips = [
+      { icon: '💰', val: c.budget },
+      { icon: '📍', val: c.zone },
+      { icon: '✨', val: c.prefs },
+    ].filter(x => x.val);
+    chipsEl.innerHTML = chips.map(x =>
+      `<span style="display:inline-flex;align-items:center;gap:5px;font-size:12px;padding:4px 10px;border-radius:20px;background:rgba(255,255,255,0.15);color:#fff;border:1px solid rgba(255,255,255,0.25)">${x.icon} ${x.val}</span>`
+    ).join('');
+  }
+
   renderPropsGrid('client-props-grid', c.props, false);
   const clientVisitsCount = visits.filter(v=>v.client===c.name).length;
   const visSection = document.getElementById('client-visits-section');
