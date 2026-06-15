@@ -343,7 +343,7 @@
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
             </button>
           </div>
-          <div class="detail-budget" id="detail-budget"></div>
+          <div id="detail-budget-wrap" style="display:flex;flex-direction:column;gap:3px;margin-bottom:10px"></div>
           <div class="link-row">
             <svg viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="2" style="width:13px;height:13px;flex-shrink:0"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
             <span class="link-text" id="detail-link"></span>
@@ -580,7 +580,9 @@
   <div class="modal">
     <div class="modal-title">Editar cliente</div>
     <div class="form-field"><label id="lbl-ec-name">Nombre</label><input type="text" id="ec-name"></div>
-    <div class="form-field"><label id="lbl-ec-budget">Presupuesto / notas</label><input type="text" id="ec-budget"></div>
+    <div class="form-field"><label>Presupuesto (USD)</label><input type="text" id="ec-budget" placeholder="Ej: hasta USD 150.000"></div>
+    <div class="form-field"><label>Barrio / Zona</label><input type="text" id="ec-zone" placeholder="Ej: Palermo, Villa Crespo"></div>
+    <div class="form-field"><label>Otras preferencias</label><textarea id="ec-prefs" placeholder="Ej: 3 ambientes, luminoso, con balcón" style="width:100%;min-height:72px;padding:9px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;outline:none;resize:none"></textarea></div>
     <div class="modal-footer">
       <button class="btn btn-danger-ghost" onclick="deleteClientFromModal()" style="margin-right:auto">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
@@ -616,7 +618,9 @@
   <div class="modal">
     <div class="modal-title" id="modal-title">Nuevo cliente</div>
     <div class="form-field"><label id="lbl-name-field">Nombre</label><input type="text" id="nc-name"></div>
-    <div class="form-field"><label id="lbl-budget-field">Presupuesto / notas</label><input type="text" id="nc-budget"></div>
+    <div class="form-field"><label id="lbl-budget-field">Presupuesto (USD)</label><input type="text" id="nc-budget" placeholder="Ej: hasta USD 150.000"></div>
+    <div class="form-field"><label id="lbl-zone-field">Barrio / Zona</label><input type="text" id="nc-zone" placeholder="Ej: Palermo, Villa Crespo, Recoleta"></div>
+    <div class="form-field"><label id="lbl-prefs-field">Otras preferencias</label><textarea id="nc-prefs" placeholder="Ej: 3 ambientes, luminoso, con balcón, no PB" style="width:100%;min-height:72px;padding:9px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;outline:none;resize:none"></textarea></div>
     <div class="modal-footer">
       <button class="btn" onclick="closeModal()" id="lbl-cancel">Cancelar</button>
       <button class="btn btn-primary" onclick="createClient()" id="lbl-create">Crear cliente</button>
@@ -763,7 +767,7 @@ async function loadClients() {
   showSpinner(false);
   console.log('loadClients response:', data);
   if(Array.isArray(data)) {
-    state.clients = data.map(c => ({ ...c, props: [], prop_count: c.prop_count||0, liked_count: c.liked_count||0 }));
+    state.clients = data.map(c => ({ ...c, props: [], prop_count: c.prop_count||0, liked_count: c.liked_count||0, zone: c.zone||'', prefs: c.prefs||'' }));
     renderClientsGrid();
   } else {
     const grid = document.getElementById('clients-grid');
@@ -1263,7 +1267,7 @@ async function openClient(id) {
   document.getElementById('client-detail-view').style.display='block';
   document.getElementById('detail-avatar').textContent=getInitials(c.name);
   document.getElementById('detail-name').textContent=c.name;
-  document.getElementById('detail-budget').textContent=c.budget||'';
+  renderClientBudge(c);
   const siteUrl = window.location.origin + window.location.pathname;
   document.getElementById('detail-link').textContent=`${siteUrl}?client=${c.id}`;
   showSpinner(true);
@@ -1272,6 +1276,22 @@ async function openClient(id) {
   renderPropsGrid('detail-props-grid', c.props, true);
   syncClientView(c);
 }
+function renderClientBudge(c) {
+  const wrap = document.getElementById('detail-budget-wrap');
+  if(!wrap) return;
+  const items = [
+    { icon: '💰', label: c.budget, show: !!c.budget },
+    { icon: '📍', label: c.zone, show: !!c.zone },
+    { icon: '✨', label: c.prefs, show: !!c.prefs },
+    // fallback for old clients with single budget field
+    { icon: '📋', label: c.budget, show: !c.zone && !c.prefs && !!c.budget },
+  ];
+  const filtered = items.filter(x => x.show).slice(0, c.zone || c.prefs ? 3 : 1);
+  wrap.innerHTML = filtered.map(x =>
+    `<div style="font-size:13px;color:var(--text2);display:flex;align-items:flex-start;gap:5px"><span>${x.icon}</span><span>${x.label}</span></div>`
+  ).join('');
+}
+
 function showClientsList() {
   state.currentClient=null;
   document.getElementById('client-detail-view').style.display='none';
@@ -1309,15 +1329,21 @@ function openNewClient() { document.getElementById('new-client-modal').classList
 function closeModal() { document.getElementById('new-client-modal').classList.remove('open'); }
 document.getElementById('new-client-modal').addEventListener('click', function(e){ if(e.target===this) closeModal(); });
 async function createClient() {
-  const name=document.getElementById('nc-name').value.trim(), budget=document.getElementById('nc-budget').value.trim();
+  const name = document.getElementById('nc-name').value.trim();
+  const budget = document.getElementById('nc-budget').value.trim();
+  const zone = document.getElementById('nc-zone').value.trim();
+  const prefs = document.getElementById('nc-prefs').value.trim();
   if(!name) return;
   showSpinner(true);
-  const data = await api('createClient', { name, budget });
+  const data = await api('createClient', { name, budget, zone, prefs });
   showSpinner(false);
   if(data.id) {
     state.clients.unshift({ ...data, props: [] });
     closeModal();
-    document.getElementById('nc-name').value=''; document.getElementById('nc-budget').value='';
+    document.getElementById('nc-name').value='';
+    document.getElementById('nc-budget').value='';
+    document.getElementById('nc-zone').value='';
+    document.getElementById('nc-prefs').value='';
     renderClientsGrid(); openClient(data.id);
   }
 }
@@ -1555,6 +1581,8 @@ function openEditClient() {
   if(!c) return;
   document.getElementById('ec-name').value = c.name || '';
   document.getElementById('ec-budget').value = c.budget || '';
+  document.getElementById('ec-zone').value = c.zone || '';
+  document.getElementById('ec-prefs').value = c.prefs || '';
   document.getElementById('edit-client-modal').classList.add('open');
 }
 
@@ -1567,14 +1595,15 @@ async function saveEditClient() {
   if(!c) return;
   const name = document.getElementById('ec-name').value.trim();
   const budget = document.getElementById('ec-budget').value.trim();
+  const zone = document.getElementById('ec-zone').value.trim();
+  const prefs = document.getElementById('ec-prefs').value.trim();
   if(!name) return;
   showSpinner(true);
-  await api('updateClient', { id: c.id, name, budget });
+  await api('updateClient', { id: c.id, name, budget, zone, prefs });
   showSpinner(false);
-  c.name = name;
-  c.budget = budget;
+  c.name = name; c.budget = budget; c.zone = zone; c.prefs = prefs;
   document.getElementById('detail-name').textContent = name;
-  document.getElementById('detail-budget').textContent = budget;
+  renderClientBudge(c);
   document.getElementById('detail-avatar').textContent = getInitials(name);
   closeEditClient();
 }
