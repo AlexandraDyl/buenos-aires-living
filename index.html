@@ -1362,7 +1362,12 @@ function rerenderCurrent() {
   if(state.currentClient){ const c=state.clients.find(x=>x.id===state.currentClient); if(c){renderPropsGrid('detail-props-grid',c.props,true);syncClientView(c);} }
   else renderClientsGrid();
   const av=document.querySelector('.view.active');
-  if(av&&av.id==='view-client'){ const c=state.currentClient?state.clients.find(x=>x.id===state.currentClient):state.clients[0]; if(c)syncClientView(c); }
+  if(av&&av.id==='view-client'){ const c=state.currentClient?state.clients.find(x=>x.id===state.currentClient):state.clients[0]; if(c){syncClientView(c);} }
+  // Reload images after rerender
+  setTimeout(() => {
+    const c = state.currentClient ? state.clients.find(x=>x.id===state.currentClient) : state.clients[0];
+    if(c && c.props) loadPropImages(c.props);
+  }, 50);
 }
 function switchTab(tab) {
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
