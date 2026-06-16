@@ -295,17 +295,29 @@
 </head>
 <body>
 <script>
-// Immediately hide agent UI if this is a client link
 (function() {
-  const p = new URLSearchParams(window.location.search).get('client');
-  if(p) {
+  const clientId = new URLSearchParams(window.location.search).get('client');
+  if(clientId) {
+    // Inject styles immediately - before any HTML renders
     const style = document.createElement('style');
     style.id = 'client-mode-style';
-    style.textContent = '#view-agent,#view-visits,#tab-agent,#tab-visits,#tab-client{display:none!important}#view-client{display:block!important}.topnav .tab-toggle{display:none!important}.lang-group{margin-left:auto}';
-    document.head && document.head.appendChild(style) || document.addEventListener('DOMContentLoaded', () => document.head.appendChild(style));
+    style.textContent = `
+      #view-agent,#view-visits,#tab-agent,#tab-visits,#tab-client{display:none!important}
+      #view-client{display:block!important}
+      .topnav .tab-toggle{display:none!important}
+      .lang-group{margin-left:auto}
+      #client-loading-screen{display:flex!important}
+    `;
+    document.head ? document.head.appendChild(style) : document.addEventListener('DOMContentLoaded',()=>document.head.appendChild(style));
   }
 })();
 </script>
+
+<!-- Client loading screen - shown while data loads -->
+<div id="client-loading-screen" style="display:none;position:fixed;inset:0;background:var(--bg);z-index:1000;flex-direction:column;align-items:center;justify-content:center;gap:16px">
+  <div style="font-family:'DM Serif Display',serif;font-size:20px;color:var(--accent)">Buenos Aires <em>Living</em></div>
+  <div style="width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite"></div>
+</div>
 
 <nav class="topnav">
   <div class="logo">
