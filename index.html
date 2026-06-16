@@ -859,6 +859,8 @@ function setLang(l) {
   lang = l;
   document.querySelectorAll('.lang-btn').forEach(b => b.classList.toggle('active', b.textContent === l.toUpperCase()));
   applyTranslations();
+  // Only rerender if page is fully loaded
+  if(document.getElementById('client-loading-screen') && document.getElementById('client-loading-screen').style.display !== 'none') return;
   rerenderCurrent();
   renderCal();
 }
@@ -1852,19 +1854,23 @@ async function init() {
   renderCal();
 
   if(clientParam) {
-    // Remove the temporary hiding style
-    const tempStyle = document.getElementById('client-mode-style');
-    if(tempStyle) tempStyle.remove();
-
+    // Keep loading screen up - don't remove yet
     // Hide nav tabs permanently for client
-    document.getElementById('tab-agent').style.display='none';
-    document.getElementById('tab-visits').style.display='none';
+    const tabAgent = document.getElementById('tab-agent');
+    const tabVisits = document.getElementById('tab-visits');
+    if(tabAgent) tabAgent.style.display='none';
+    if(tabVisits) tabVisits.style.display='none';
 
-    switchTab('client');
+    // Don't switchTab yet - keep loading screen visible
+    // Set active view silently without triggering renders
+    document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+    document.getElementById('view-client').classList.add('active');
+
+    state.currentClient = clientParam;
     const c = state.clients.find(x=>x.id===clientParam);
     if(c) {
-      state.currentClient = clientParam;
       await loadProperties(clientParam);
+      // NOW show the client view - loading screen hides inside syncClientView
       syncClientView(c);
     } else {
       // Client not found
