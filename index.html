@@ -1404,7 +1404,7 @@ function showClientsList() {
 }
 function hideLoadingScreen() {
   const view = document.getElementById('view-client');
-  if(view) view.style.opacity = '1';
+  if(view) { view.style.opacity = '1'; view.style.transition = 'opacity 0.3s'; }
 }
 
 function syncClientView(c) {
@@ -1428,7 +1428,8 @@ function syncClientView(c) {
     ).join('');
   }
 
-  renderPropsGrid('client-props-grid', c.props, false);
+  renderClientSections(c.props);
+  hideLoadingScreen();
 
   const clientVisitsCount = visits.filter(v=>v.client===c.name).length;
   const visSection = document.getElementById('client-visits-section');
