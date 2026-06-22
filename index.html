@@ -1184,7 +1184,8 @@ function propCardHtml(p, isAgent) {
     }
     actionsHtml += '<button class="btn btn-sm btn-ghost" onclick="openEditProp(\''+p.id+'\')">✏️</button>';
     actionsHtml += '<button class="btn btn-sm btn-danger-ghost" onclick="removeProp(\''+p.id+'\')">🗑</button>';
-  } else {
+  }
+  if(!isAgent) {
     actionsHtml += '<button class="btn-reject '+rejectedClass+'" onclick="toggleReject(\''+p.id+'\')">✗ No encaja</button>';
   }
 
