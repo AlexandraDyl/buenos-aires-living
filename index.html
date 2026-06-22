@@ -142,9 +142,9 @@
   .filter-bar { display: flex; gap: 8px; margin-bottom: 1.5rem; flex-wrap: wrap; align-items: center; justify-content: space-between; }
   .prop-section-title { font-family: 'DM Serif Display', serif; font-size: 18px; color: var(--text); margin: 1.5rem 0 1rem; display: flex; align-items: center; gap: 8px; }
   .prop-section-title span { font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 600; color: var(--text3); background: var(--surface2); padding: 2px 8px; border-radius: 20px; }
-  .btn-reject { position: absolute; top: 10px; left: 10px; width: 34px; height: 34px; border-radius: 50%; background: var(--surface); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.15s; font-size: 15px; font-weight: 600; color: var(--text3); line-height: 1; }
-  .btn-reject:hover { background: var(--danger-light); color: var(--danger); border-color: var(--danger); }
-  .btn-reject.rejected { background: var(--danger-light); color: var(--danger); border-color: var(--danger); }
+  .btn-reject { position: absolute; top: 10px; left: 10px; width: 34px; height: 34px; border-radius: 50%; background: white; border: 1px solid #DDDBD6; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.15s; font-size: 15px; font-weight: 700; color: #9799A6; line-height: 1; z-index: 2; opacity: 1 !important; visibility: visible !important; }
+  .btn-reject:hover { background: #FDECEA; color: #B83232; border-color: #B83232; }
+  .btn-reject.rejected { background: #FDECEA; color: #B83232; border-color: #B83232; }
   .filter-pills { display: flex; gap: 6px; }
   .pill { padding: 6px 16px; border-radius: 20px; font-size: 13px; font-weight: 500; border: 1px solid var(--border); background: var(--surface); color: var(--text2); cursor: pointer; transition: all 0.15s; display: inline-flex; align-items: center; gap: 5px; }
   .pill:hover { border-color: var(--text3); color: var(--text); }
@@ -1342,6 +1342,7 @@ function renderPropsGrid(containerId, props, isAgent) {
         <div class="prop-thumb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>
         ${p.image_url ? `<img src="${p.image_url}" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover" onerror="this.style.display='none'">` : ''}
         ${sourceBadge(p.url)}
+        <button class="btn-reject ${p.rejected?'rejected':''}" onclick="toggleReject('${p.id}')">✕</button>
         <div class="fav-btn ${p.liked?'liked':''}" onclick="toggleLike('${p.id}')">
           <svg viewBox="0 0 24 24" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
         </div>
