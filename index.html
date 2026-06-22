@@ -1132,8 +1132,10 @@ async function removeVisit(e, id) {
 }
 
 /* ---- CATALOG ---- */
-function renderClientSections(props) {
-  const g = document.getElementById('client-props-grid');
+function renderClientSections(props, containerId, isAgent) {
+  const gridId = containerId || 'client-props-grid';
+  const agent = isAgent || false;
+  const g = document.getElementById(gridId);
   if(!g) return;
 
   const newProps = props.filter(p => !p.liked && !p.rejected && !p.client_comment);
@@ -1143,62 +1145,87 @@ function renderClientSections(props) {
   let html = '';
 
   if(newProps.length) {
-    html += `<div class="prop-section-title">Nuevas <span>${newProps.length}</span></div>`;
-    html += `<div class="props-grid" style="margin-bottom:1rem">${newProps.map(p=>propCardHtml(p,false)).join('')}</div>`;
+    html += '<div class="prop-section-title">Nuevas <span>'+newProps.length+'</span></div>';
+    html += '<div class="props-grid" style="margin-bottom:1rem">'+newProps.map(p=>propCardHtml(p,agent)).join('')+'</div>';
   }
   if(liked.length) {
-    html += `<div class="prop-section-title">❤️ Me gusta <span>${liked.length}</span></div>`;
-    html += `<div class="props-grid" style="margin-bottom:1rem">${liked.map(p=>propCardHtml(p,false)).join('')}</div>`;
+    html += '<div class="prop-section-title">❤️ Me gusta <span>'+liked.length+'</span></div>';
+    html += '<div class="props-grid" style="margin-bottom:1rem">'+liked.map(p=>propCardHtml(p,agent)).join('')+'</div>';
   }
   if(rejected.length) {
-    html += `<div class="prop-section-title" style="color:var(--text3)">✗ No encaja <span>${rejected.length}</span></div>`;
-    html += `<div class="props-grid" style="margin-bottom:1rem;opacity:0.6">${rejected.map(p=>propCardHtml(p,false)).join('')}</div>`;
+    html += '<div class="prop-section-title" style="color:var(--text3)">✗ No encaja <span>'+rejected.length+'</span></div>';
+    html += '<div class="props-grid" style="margin-bottom:1rem;opacity:0.6">'+rejected.map(p=>propCardHtml(p,agent)).join('')+'</div>';
   }
   if(!props.length) {
-    html = `<div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg><p>${t('noProps')}</p></div>`;
+    html = '<div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg><p>'+t('noProps')+'</p></div>';
   }
 
   g.innerHTML = html;
 }
 
 function propCardHtml(p, isAgent) {
-  return `
-    <div class="prop-card" id="card-${p.id}">
-      <div class="prop-thumb">
-        <div class="prop-thumb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>
-        ${p.image_url ? `<img src="${p.image_url}" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover" onerror="this.style.display='none'">` : ''}
-        ${sourceBadge(p.url)}
-        <div class="fav-btn ${p.liked?'liked':''}" onclick="toggleLike('${p.id}')">
-          <svg viewBox="0 0 24 24" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-        </div>
-      </div>
-      <div class="prop-body">
-        <div class="prop-price">${p.price}</div>
-        <div class="prop-addr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>${p.addr}</div>
-        <div class="chips">
-          ${p.rooms?`<span class="chip">${p.rooms}</span>`:''}
-          ${p.m2?`<span class="chip">${p.m2}</span>`:''}
-          ${p.floor?`<span class="chip">${p.floor}</span>`:''}
-        </div>
-        ${p.agent_comment ? `<div style="font-size:13px;padding:8px 10px;background:var(--accent-light);border-radius:var(--radius-sm);color:var(--accent-text);border-left:3px solid var(--accent)">${p.agent_comment}</div>` : ''}
-        <div class="prop-actions">
-          <a href="${p.url}" target="_blank" class="btn btn-sm"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>${t('viewPortal')}</a>
-          ${isAgent ? `<button class="btn btn-sm btn-ghost" onclick="openEditProp('${p.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
-          <button class="btn btn-sm btn-danger-ghost" onclick="removeProp('${p.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></button>` : ''}
-          ${!isAgent ? `<button class="btn-reject ${p.rejected?'rejected':''}" onclick="toggleReject('${p.id}')">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-            ${p.rejected ? 'No encaja' : 'No encaja'}
-          </button>` : ''}
-        </div>
-        <div style="margin-top:6px">
-          ${!isAgent && p.agent_comment ? '' : ''}
-          <div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px">Mi comentario</div>
-          <textarea class="prop-comment" style="min-height:52px" placeholder="${t('commentPh')}" onblur="saveClientComment('${p.id}',this.value)">${p.client_comment||''}</textarea>
-        </div>
-        <div class="saved-msg" id="saved-${p.id}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 12 4 12"/></svg>${t('saved')}</div>
-      </div>
-    </div>`;
+  const imgHtml = p.image_url ? '<img src="'+p.image_url+'" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover" onerror="this.style.display=\'none\'">' : '';
+  const badge = sourceBadge(p.url);
+  const likedClass = p.liked ? 'liked' : '';
+  const rejectedClass = p.rejected ? 'rejected' : '';
+  const agentCommentHtml = p.agent_comment ? '<div style="font-size:13px;padding:8px 10px;background:var(--accent-light);border-radius:var(--radius-sm);color:var(--accent-text);border-left:3px solid var(--accent)">'+p.agent_comment+'</div>' : '';
+  const roomsChip = p.rooms ? '<span class="chip">'+p.rooms+'</span>' : '';
+  const m2Chip = p.m2 ? '<span class="chip">'+p.m2+'</span>' : '';
+  const floorChip = p.floor ? '<span class="chip">'+p.floor+'</span>' : '';
+  const urlLink = p.url ? '<a class="visit-link" href="'+p.url+'" target="_blank">Ver propiedad</a>' : '';
+  
+  let actionsHtml = '<a href="'+p.url+'" target="_blank" class="btn btn-sm">'+t('viewPortal')+'</a>';
+  
+  if(isAgent) {
+    if(p.liked) {
+      actionsHtml += '<button class="btn btn-sm" onclick="scheduleVisitFromProp(\''+p.id+'\')" style="background:var(--accent-light);color:var(--accent-text);border-color:var(--accent-light)">Agendar visita</button>';
+    }
+    actionsHtml += '<button class="btn btn-sm btn-ghost" onclick="openEditProp(\''+p.id+'\')">✏️</button>';
+    actionsHtml += '<button class="btn btn-sm btn-danger-ghost" onclick="removeProp(\''+p.id+'\')">🗑</button>';
+  } else {
+    actionsHtml += '<button class="btn-reject '+rejectedClass+'" onclick="toggleReject(\''+p.id+'\')">✗ No encaja</button>';
+  }
+
+  let commentHtml = '';
+  if(isAgent) {
+    commentHtml = '<div style="display:flex;flex-direction:column;gap:8px;margin-top:6px">';
+    commentHtml += '<div><div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px">🔒 Nota interna</div>';
+    commentHtml += '<textarea class="prop-comment" style="min-height:52px" placeholder="Solo la ves vos..." onblur="saveAgentComment(\''+p.id+'\',this.value)">'+( p.comment||'')+'</textarea></div>';
+    commentHtml += '<div><div style="font-size:11px;font-weight:600;color:var(--accent);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px">💬 Comentario para el cliente</div>';
+    commentHtml += '<textarea class="prop-comment" style="min-height:52px;border-color:var(--accent-light)" placeholder="El cliente verá esto..." onblur="saveAgentForClient(\''+p.id+'\',this.value)">'+(p.agent_comment||'')+'</textarea></div>';
+    if(p.client_comment) {
+      commentHtml += '<div><div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px">⭐ Comentario del cliente</div>';
+      commentHtml += '<div style="font-size:13px;padding:8px 10px;background:var(--accent-light);border-radius:var(--radius-sm);color:var(--accent-text);border-left:3px solid var(--accent)">'+p.client_comment+'</div></div>';
+    }
+    commentHtml += '</div>';
+  } else {
+    commentHtml = '<div style="margin-top:6px">';
+    if(p.agent_comment) {
+      commentHtml += '<div style="font-size:11px;font-weight:600;color:var(--accent);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px">Nota del agente</div>';
+      commentHtml += '<div style="font-size:13px;padding:8px 10px;background:var(--accent-light);border-radius:var(--radius-sm);color:var(--accent-text);border-left:3px solid var(--accent);margin-bottom:8px">'+p.agent_comment+'</div>';
+    }
+    commentHtml += '<div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px">Mi comentario</div>';
+    commentHtml += '<textarea class="prop-comment" style="min-height:52px" placeholder="'+t('commentPh')+'" onblur="saveClientComment(\''+p.id+'\',this.value)">'+(p.client_comment||'')+'</textarea>';
+    commentHtml += '</div>';
+  }
+
+  return '<div class="prop-card" id="card-'+p.id+'">'
+    + '<div class="prop-thumb">'
+    + '<div class="prop-thumb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>'
+    + imgHtml + badge
+    + '<div class="fav-btn '+likedClass+'" onclick="toggleLike(\''+p.id+'\')"><svg viewBox="0 0 24 24" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></div>'
+    + '</div>'
+    + '<div class="prop-body">'
+    + '<div class="prop-price">'+p.price+'</div>'
+    + '<div class="prop-addr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>'+p.addr+'</div>'
+    + '<div class="chips">'+roomsChip+m2Chip+floorChip+'</div>'
+    + agentCommentHtml
+    + '<div class="prop-actions">'+actionsHtml+'</div>'
+    + commentHtml
+    + '<div class="saved-msg" id="saved-'+p.id+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 12 4 12"/></svg>'+t('saved')+'</div>'
+    + '</div></div>';
 }
+
 
 function renderClientsGrid() {
   const subEl = document.getElementById('lbl-clients-sub'); if(subEl) subEl.textContent = getLang().clientsSub(state.clients.length);
@@ -1377,7 +1404,7 @@ async function openClient(id) {
   showSpinner(true);
   await loadProperties(id);
   showSpinner(false);
-  renderPropsGrid('detail-props-grid', c.props, true);
+  renderClientSections(c.props, 'detail-props-grid', true);
   syncClientView(c);
 }
 function renderClientBudge(c) {
@@ -1448,7 +1475,7 @@ function rerenderCurrent() {
     // Agent view
     if(state.currentClient) {
       const c = state.clients.find(x=>x.id===state.currentClient);
-      if(c) renderPropsGrid('detail-props-grid', c.props, true);
+      if(c) renderClientSections(c.props, 'detail-props-grid', true);
     } else {
       renderClientsGrid();
     }
@@ -1531,7 +1558,7 @@ async function removeProp(pid) {
   showSpinner(false);
   const c=state.clients.find(x=>x.id===state.currentClient);
   c.props=c.props.filter(p=>p.id!==pid);
-  renderPropsGrid('detail-props-grid',c.props,true); syncClientView(c);
+  renderClientSections(c.props, 'detail-props-grid', true); syncClientView(c);
 }
 async function toggleReject(pid) {
   const c = state.currentClient ? state.clients.find(x=>x.id===state.currentClient) : state.clients[0];
@@ -1593,7 +1620,7 @@ function setAgentFilter(f, el) {
   document.querySelectorAll('#agent-filter-bar .pill').forEach(p => p.classList.remove('active'));
   el.classList.add('active');
   const c = state.currentClient ? state.clients.find(x=>x.id===state.currentClient) : null;
-  if(c) renderPropsGrid('detail-props-grid', c.props, true);
+  if(c) renderClientSections(c.props, 'detail-props-grid', true);
 }
 
 function setFilter(f,el) {
