@@ -400,12 +400,11 @@
           <input type="text" id="new-photo" style="flex:1" placeholder="">
         </div>
       </div>
-      <div style="display:flex;gap:8px;margin-bottom:1.25rem;flex-wrap:wrap" id="agent-filter-bar">
+      <div style="display:flex;gap:6px;margin-bottom:1.25rem;flex-wrap:wrap" id="agent-filter-bar">
         <div class="pill active" id="agent-pill-all" onclick="setAgentFilter('all',this)"><span id="lbl-agent-all">Todas</span></div>
-        <div class="pill" id="agent-pill-liked" onclick="setAgentFilter('liked',this)">
-          <svg viewBox="0 0 24 24" fill="currentColor" style="width:13px;height:13px"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-          <span id="lbl-agent-liked">Favoritos del cliente</span>
-        </div>
+        <div class="pill" onclick="setAgentFilter('new',this)" id="agent-pill-new">✨ Nuevas</div>
+        <div class="pill" id="agent-pill-liked" onclick="setAgentFilter('liked',this)">❤️ <span id="lbl-agent-liked">Me gusta</span></div>
+        <div class="pill" onclick="setAgentFilter('rejected',this)" id="agent-pill-rejected">✕ No encaja</div>
       </div>
       <div id="detail-props-grid"></div>
     </div>
@@ -491,6 +490,12 @@
     <div class="autosave-note" id="autosave-note" style="display:none">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 12 4 12"/><polyline points="20 6 9 12 20 18"/></svg>
       <span id="lbl-autosave">Tus comentarios y favoritos se guardan automáticamente</span>
+    </div>
+    <div style="display:flex;gap:6px;margin-bottom:1.25rem;flex-wrap:wrap" id="client-filter-bar">
+      <div class="pill active" onclick="setClientFilter('all',this)" id="cpill-all">Todas</div>
+      <div class="pill" onclick="setClientFilter('new',this)" id="cpill-new">✨ Nuevas</div>
+      <div class="pill" onclick="setClientFilter('liked',this)" id="cpill-liked">❤️ Me gusta</div>
+      <div class="pill" onclick="setClientFilter('rejected',this)" id="cpill-rejected">✕ No encaja</div>
     </div>
     <div id="client-props-grid"></div>
 
@@ -1132,37 +1137,64 @@ async function removeVisit(e, id) {
 }
 
 /* ---- CATALOG ---- */
+let clientFilter = 'all';
+let agentSectionFilter = 'all';
+
 function renderClientSections(props, containerId, isAgent) {
   const gridId = containerId || 'client-props-grid';
   const agent = isAgent || false;
   const g = document.getElementById(gridId);
   if(!g) return;
-  // Clear any old grid styling
   g.style.display = 'block';
 
-  const newProps = props.filter(p => !p.liked && !p.rejected && !p.client_comment);
-  const liked = props.filter(p => p.liked && !p.rejected);
-  const rejected = props.filter(p => p.rejected);
+  const currentFilter = agent ? agentSectionFilter : clientFilter;
+
+  let filtered;
+  if(currentFilter === 'new') filtered = props.filter(p => !p.liked && !p.rejected && !p.client_comment);
+  else if(currentFilter === 'liked') filtered = props.filter(p => p.liked && !p.rejected);
+  else if(currentFilter === 'rejected') filtered = props.filter(p => p.rejected);
+  else filtered = props; // 'all'
 
   let html = '';
-
-  if(newProps.length) {
-    html += '<div class="prop-section-title">Nuevas <span>'+newProps.length+'</span></div>';
-    html += '<div class="props-grid" style="margin-bottom:1rem">'+newProps.map(p=>propCardHtml(p,agent)).join('')+'</div>';
-  }
-  if(liked.length) {
-    html += '<div class="prop-section-title">❤️ Me gusta <span>'+liked.length+'</span></div>';
-    html += '<div class="props-grid" style="margin-bottom:1rem">'+liked.map(p=>propCardHtml(p,agent)).join('')+'</div>';
-  }
-  if(rejected.length) {
-    html += '<div class="prop-section-title" style="color:var(--text3)">✗ No encaja <span>'+rejected.length+'</span></div>';
-    html += '<div class="props-grid" style="margin-bottom:1rem;opacity:0.6">'+rejected.map(p=>propCardHtml(p,agent)).join('')+'</div>';
-  }
-  if(!props.length) {
+  if(filtered.length) {
+    html = '<div class="props-grid">'+filtered.map(p=>propCardHtml(p,agent)).join('')+'</div>';
+  } else if(!props.length) {
     html = '<div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg><p>'+t('noProps')+'</p></div>';
+  } else {
+    html = '<div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg><p>No hay propiedades en esta categoría.</p></div>';
   }
 
   g.innerHTML = html;
+  // Update pill counts
+  updateFilterCounts(props, agent);
+}
+
+function updateFilterCounts(props, isAgent) {
+  const newCount = props.filter(p => !p.liked && !p.rejected && !p.client_comment).length;
+  const likedCount = props.filter(p => p.liked && !p.rejected).length;
+  const rejectedCount = props.filter(p => p.rejected).length;
+  const prefix = isAgent ? 'agent' : 'c';
+  const setCount = (id, count, label) => {
+    const el = document.getElementById(id);
+    if(el) el.innerHTML = label + (count > 0 ? ' <span style="background:rgba(0,0,0,0.08);border-radius:20px;padding:1px 7px;font-size:11px">'+count+'</span>' : '');
+  };
+  if(isAgent) {
+    setCount('agent-pill-new', newCount, '✨ Nuevas');
+    setCount('agent-pill-liked', likedCount, '❤️ Me gusta');
+    setCount('agent-pill-rejected', rejectedCount, '✕ No encaja');
+  } else {
+    setCount('cpill-new', newCount, '✨ Nuevas');
+    setCount('cpill-liked', likedCount, '❤️ Me gusta');
+    setCount('cpill-rejected', rejectedCount, '✕ No encaja');
+  }
+}
+
+function setClientFilter(f, el) {
+  clientFilter = f;
+  document.querySelectorAll('#client-filter-bar .pill').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  const c = state.currentClient ? state.clients.find(x=>x.id===state.currentClient) : state.clients[0];
+  if(c) renderClientSections(c.props, 'client-props-grid', false);
 }
 
 function propCardHtml(p, isAgent) {
@@ -1624,6 +1656,7 @@ let agentFilter = 'all';
 
 function setAgentFilter(f, el) {
   agentFilter = f;
+  agentSectionFilter = f;
   document.querySelectorAll('#agent-filter-bar .pill').forEach(p => p.classList.remove('active'));
   el.classList.add('active');
   const c = state.currentClient ? state.clients.find(x=>x.id===state.currentClient) : null;
