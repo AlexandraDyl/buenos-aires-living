@@ -1230,6 +1230,7 @@ function propCardHtml(p, isAgent) {
     if(p.liked) {
       actionsHtml += '<button class="btn btn-sm" onclick="scheduleVisitFromProp(\''+p.id+'\')" style="background:var(--accent-light);color:var(--accent-text);border-color:var(--accent-light)">Agendar visita</button>';
     }
+    actionsHtml += '<button class="btn btn-sm btn-ghost" onclick="openCopyProp(\''+p.id+'\')" title="Copiar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>';
     actionsHtml += '<button class="btn btn-sm btn-ghost" onclick="openEditProp(\''+p.id+'\')">✏️</button>';
     actionsHtml += '<button class="btn btn-sm btn-danger-ghost" onclick="removeProp(\''+p.id+'\')">🗑</button>';
   }
