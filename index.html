@@ -140,6 +140,11 @@
 
   /* CLIENT VIEW */
   .filter-bar { display: flex; gap: 8px; margin-bottom: 1.5rem; flex-wrap: wrap; align-items: center; justify-content: space-between; }
+  .prop-section-title { font-family: 'DM Serif Display', serif; font-size: 18px; color: var(--text); margin: 1.5rem 0 1rem; display: flex; align-items: center; gap: 8px; }
+  .prop-section-title span { font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 600; color: var(--text3); background: var(--surface2); padding: 2px 8px; border-radius: 20px; }
+  .btn-reject { background: transparent; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 5px 10px; cursor: pointer; color: var(--text3); font-size: 12px; font-family: 'DM Sans', sans-serif; display: inline-flex; align-items: center; gap: 4px; transition: all 0.15s; }
+  .btn-reject:hover { background: var(--danger-light); color: var(--danger); border-color: var(--danger); }
+  .btn-reject.rejected { background: var(--danger-light); color: var(--danger); border-color: var(--danger); }
   .filter-pills { display: flex; gap: 6px; }
   .pill { padding: 6px 16px; border-radius: 20px; font-size: 13px; font-weight: 500; border: 1px solid var(--border); background: var(--surface); color: var(--text2); cursor: pointer; transition: all 0.15s; display: inline-flex; align-items: center; gap: 5px; }
   .pill:hover { border-color: var(--text3); color: var(--text); }
@@ -487,16 +492,7 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 12 4 12"/><polyline points="20 6 9 12 20 18"/></svg>
       <span id="lbl-autosave">Tus comentarios y favoritos se guardan automáticamente</span>
     </div>
-    <div class="filter-bar">
-      <div class="filter-pills">
-        <div class="pill active" id="pill-all" onclick="setFilter('all',this)"></div>
-        <div class="pill" id="pill-liked" onclick="setFilter('liked',this)">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-          <span id="lbl-favorites">Favoritas</span>
-        </div>
-      </div>
-    </div>
-    <div class="props-grid" id="client-props-grid"></div>
+    <div id="client-props-grid"></div>
 
     <div id="client-visits-section" style="margin-top:2.5rem;display:none">
       <div style="font-family:'DM Serif Display',serif;font-size:22px;margin-bottom:1.25rem;color:var(--text)" id="lbl-client-visits-title">Mis visitas programadas</div>
@@ -810,6 +806,7 @@ async function loadProperties(clientId) {
         m2: String(p.sqm||p.m2||''), 
         floor: String(p.floor_info||p.floor||''),
         liked: p.liked === true || p.liked === 'TRUE' || p.liked === 'true',
+        rejected: p.rejected === true || p.rejected === 'TRUE' || p.rejected === 'true',
         comment: String(p.comment||''),
         agent_comment: String(p.agent_comment||''),
         client_comment: String(p.client_comment||''),
@@ -1135,6 +1132,74 @@ async function removeVisit(e, id) {
 }
 
 /* ---- CATALOG ---- */
+function renderClientSections(props) {
+  const g = document.getElementById('client-props-grid');
+  if(!g) return;
+
+  const newProps = props.filter(p => !p.liked && !p.rejected && !p.client_comment);
+  const liked = props.filter(p => p.liked && !p.rejected);
+  const rejected = props.filter(p => p.rejected);
+
+  let html = '';
+
+  if(newProps.length) {
+    html += `<div class="prop-section-title">Nuevas <span>${newProps.length}</span></div>`;
+    html += `<div class="props-grid" style="margin-bottom:1rem">${newProps.map(p=>propCardHtml(p,false)).join('')}</div>`;
+  }
+  if(liked.length) {
+    html += `<div class="prop-section-title">❤️ Me gusta <span>${liked.length}</span></div>`;
+    html += `<div class="props-grid" style="margin-bottom:1rem">${liked.map(p=>propCardHtml(p,false)).join('')}</div>`;
+  }
+  if(rejected.length) {
+    html += `<div class="prop-section-title" style="color:var(--text3)">✗ No encaja <span>${rejected.length}</span></div>`;
+    html += `<div class="props-grid" style="margin-bottom:1rem;opacity:0.6">${rejected.map(p=>propCardHtml(p,false)).join('')}</div>`;
+  }
+  if(!props.length) {
+    html = `<div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg><p>${t('noProps')}</p></div>`;
+  }
+
+  g.innerHTML = html;
+}
+
+function propCardHtml(p, isAgent) {
+  return `
+    <div class="prop-card" id="card-${p.id}">
+      <div class="prop-thumb">
+        <div class="prop-thumb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>
+        ${p.image_url ? `<img src="${p.image_url}" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover" onerror="this.style.display='none'">` : ''}
+        ${sourceBadge(p.url)}
+        <div class="fav-btn ${p.liked?'liked':''}" onclick="toggleLike('${p.id}')">
+          <svg viewBox="0 0 24 24" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+        </div>
+      </div>
+      <div class="prop-body">
+        <div class="prop-price">${p.price}</div>
+        <div class="prop-addr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>${p.addr}</div>
+        <div class="chips">
+          ${p.rooms?`<span class="chip">${p.rooms}</span>`:''}
+          ${p.m2?`<span class="chip">${p.m2}</span>`:''}
+          ${p.floor?`<span class="chip">${p.floor}</span>`:''}
+        </div>
+        ${p.agent_comment ? `<div style="font-size:13px;padding:8px 10px;background:var(--accent-light);border-radius:var(--radius-sm);color:var(--accent-text);border-left:3px solid var(--accent)">${p.agent_comment}</div>` : ''}
+        <div class="prop-actions">
+          <a href="${p.url}" target="_blank" class="btn btn-sm"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>${t('viewPortal')}</a>
+          ${isAgent ? `<button class="btn btn-sm btn-ghost" onclick="openEditProp('${p.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+          <button class="btn btn-sm btn-danger-ghost" onclick="removeProp('${p.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></button>` : ''}
+          ${!isAgent ? `<button class="btn-reject ${p.rejected?'rejected':''}" onclick="toggleReject('${p.id}')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            ${p.rejected ? 'No encaja' : 'No encaja'}
+          </button>` : ''}
+        </div>
+        <div style="margin-top:6px">
+          ${!isAgent && p.agent_comment ? '' : ''}
+          <div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px">Mi comentario</div>
+          <textarea class="prop-comment" style="min-height:52px" placeholder="${t('commentPh')}" onblur="saveClientComment('${p.id}',this.value)">${p.client_comment||''}</textarea>
+        </div>
+        <div class="saved-msg" id="saved-${p.id}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 12 4 12"/></svg>${t('saved')}</div>
+      </div>
+    </div>`;
+}
+
 function renderClientsGrid() {
   const subEl = document.getElementById('lbl-clients-sub'); if(subEl) subEl.textContent = getLang().clientsSub(state.clients.length);
   const g = document.getElementById('clients-grid');
@@ -1435,7 +1500,7 @@ async function addProperty() {
   console.log('addProperty response:', data);
   if(data.id) {
     const photoUrl = document.getElementById('new-photo').value.trim();
-    const newProp = {id:data.id,url,price:propData.price,addr:propData.address,rooms:propData.rooms,m2:propData.sqm,floor:propData.floor_info,liked:false,comment:'',agent_comment:'',client_comment:'',image_url:photoUrl};
+    const newProp = {id:data.id,url,price:propData.price,addr:propData.address,rooms:propData.rooms,m2:propData.sqm,floor:propData.floor_info,liked:false,comment:'',agent_comment:'',client_comment:'',image_url:photoUrl,rejected:false};
     c.props.push(newProp);
     if(photoUrl) imageCache[data.id] = photoUrl;
     ['new-url','new-price','new-addr','new-rooms','new-m2','new-floor','new-photo'].forEach(id=>{document.getElementById(id).value='';});
@@ -1467,12 +1532,28 @@ async function removeProp(pid) {
   c.props=c.props.filter(p=>p.id!==pid);
   renderPropsGrid('detail-props-grid',c.props,true); syncClientView(c);
 }
+async function toggleReject(pid) {
+  const c = state.currentClient ? state.clients.find(x=>x.id===state.currentClient) : state.clients[0];
+  const p = c && c.props.find(x=>x.id===pid); if(!p) return;
+  p.rejected = !p.rejected;
+  if(p.rejected) p.liked = false; // can't be liked and rejected
+  await api('updateProperty', { id: pid, rejected: p.rejected });
+  const c2 = state.currentClient ? state.clients.find(x=>x.id===state.currentClient) : state.clients[0];
+  if(c2) renderClientSections(c2.props);
+}
+
 async function toggleLike(pid) {
   const c=state.currentClient?state.clients.find(x=>x.id===state.currentClient):state.clients[0];
   const p=c.props.find(x=>x.id===pid); if(!p) return;
   p.liked=!p.liked;
   const btn=document.querySelector(`#card-${pid} .fav-btn`); if(btn) btn.classList.toggle('liked');
   await api('updateProperty', { id: pid, liked: p.liked });
+  // Re-render sections if in client view
+  const av = document.querySelector('.view.active');
+  if(av && av.id === 'view-client') {
+    const c2 = state.currentClient ? state.clients.find(x=>x.id===state.currentClient) : state.clients[0];
+    if(c2) renderClientSections(c2.props);
+  }
 }
 async function saveComment(pid,val) {
   await saveAgentComment(pid,val);
