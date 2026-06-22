@@ -401,8 +401,7 @@
         </div>
       </div>
       <div style="display:flex;gap:6px;margin-bottom:1.25rem;flex-wrap:wrap" id="agent-filter-bar">
-        <div class="pill active" id="agent-pill-all" onclick="setAgentFilter('all',this)"><span id="lbl-agent-all">Todas</span></div>
-        <div class="pill" onclick="setAgentFilter('new',this)" id="agent-pill-new">✨ Nuevas</div>
+        <div class="pill active" id="agent-pill-new" onclick="setAgentFilter('new',this)">✨ Nuevas</div>
         <div class="pill" id="agent-pill-liked" onclick="setAgentFilter('liked',this)">❤️ <span id="lbl-agent-liked">Me gusta</span></div>
         <div class="pill" onclick="setAgentFilter('rejected',this)" id="agent-pill-rejected">✕ No encaja</div>
       </div>
@@ -492,8 +491,7 @@
       <span id="lbl-autosave">Tus comentarios y favoritos se guardan automáticamente</span>
     </div>
     <div style="display:flex;gap:6px;margin-bottom:1.25rem;flex-wrap:wrap" id="client-filter-bar">
-      <div class="pill active" onclick="setClientFilter('all',this)" id="cpill-all">Todas</div>
-      <div class="pill" onclick="setClientFilter('new',this)" id="cpill-new">✨ Nuevas</div>
+      <div class="pill active" onclick="setClientFilter('new',this)" id="cpill-new">✨ Nuevas</div>
       <div class="pill" onclick="setClientFilter('liked',this)" id="cpill-liked">❤️ Me gusta</div>
       <div class="pill" onclick="setClientFilter('rejected',this)" id="cpill-rejected">✕ No encaja</div>
     </div>
@@ -1137,8 +1135,8 @@ async function removeVisit(e, id) {
 }
 
 /* ---- CATALOG ---- */
-let clientFilter = 'all';
-let agentSectionFilter = 'all';
+let clientFilter = 'new';
+let agentSectionFilter = 'new';
 
 function renderClientSections(props, containerId, isAgent) {
   const gridId = containerId || 'client-props-grid';
