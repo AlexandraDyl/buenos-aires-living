@@ -1532,7 +1532,7 @@ async function addProperty() {
     c.props.push(newProp);
     if(photoUrl) imageCache[data.id] = photoUrl;
     ['new-url','new-price','new-addr','new-rooms','new-m2','new-floor','new-photo'].forEach(id=>{document.getElementById(id).value='';});
-    renderPropsGrid('detail-props-grid',c.props,true); syncClientView(c);
+    renderClientSections(c.props,'detail-props-grid',true); syncClientView(c);
     c.prop_count = c.props.length;
     // Save photo URL if provided manually, otherwise try auto-fetch
     if(photoUrl) {
@@ -1567,7 +1567,9 @@ async function toggleReject(pid) {
   if(p.rejected) p.liked = false; // can't be liked and rejected
   await api('updateProperty', { id: pid, rejected: p.rejected });
   const c2 = state.currentClient ? state.clients.find(x=>x.id===state.currentClient) : state.clients[0];
-  if(c2) renderClientSections(c2.props);
+  const av2 = document.querySelector('.view.active');
+  const isAgentView = av2 && av2.id !== 'view-client';
+  if(c2) renderClientSections(c2.props, isAgentView ? 'detail-props-grid' : 'client-props-grid', isAgentView);
 }
 
 async function toggleLike(pid) {
@@ -1580,7 +1582,9 @@ async function toggleLike(pid) {
   const av = document.querySelector('.view.active');
   if(av && av.id === 'view-client') {
     const c2 = state.currentClient ? state.clients.find(x=>x.id===state.currentClient) : state.clients[0];
-    if(c2) renderClientSections(c2.props);
+    const av3 = document.querySelector('.view.active');
+    const isAgView = av3 && av3.id !== 'view-client';
+    if(c2) renderClientSections(c2.props, isAgView ? 'detail-props-grid' : 'client-props-grid', isAgView);
   }
 }
 async function saveComment(pid,val) {
@@ -1852,7 +1856,7 @@ async function saveEditProp() {
   if(newPhoto) imageCache[editingPropId] = newPhoto;
 
   closeEditProp();
-  renderPropsGrid('detail-props-grid', c.props, true);
+  renderClientSections(c.props, 'detail-props-grid', true);
   syncClientView(c);
 }
 
