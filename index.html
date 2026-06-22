@@ -407,7 +407,7 @@
           <span id="lbl-agent-liked">Favoritos del cliente</span>
         </div>
       </div>
-      <div class="props-grid" id="detail-props-grid"></div>
+      <div id="detail-props-grid"></div>
     </div>
   </div>
 </div>
@@ -1137,6 +1137,8 @@ function renderClientSections(props, containerId, isAgent) {
   const agent = isAgent || false;
   const g = document.getElementById(gridId);
   if(!g) return;
+  // Clear any old grid styling
+  g.style.display = 'block';
 
   const newProps = props.filter(p => !p.liked && !p.rejected && !p.client_comment);
   const liked = props.filter(p => p.liked && !p.rejected);
