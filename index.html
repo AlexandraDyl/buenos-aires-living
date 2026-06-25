@@ -1166,7 +1166,7 @@ function renderClientSections(props, containerId, isAgent) {
   const currentFilter = agent ? agentSectionFilter : clientFilter;
 
   let filtered;
-  if(currentFilter === 'new') filtered = props.filter(p => !p.liked && !p.rejected && !p.client_comment);
+  if(currentFilter === 'new') filtered = props.filter(p => !p.liked && !p.rejected);
   else if(currentFilter === 'liked') filtered = props.filter(p => p.liked && !p.rejected);
   else if(currentFilter === 'rejected') filtered = props.filter(p => p.rejected);
   else filtered = props; // 'all'
@@ -1186,7 +1186,7 @@ function renderClientSections(props, containerId, isAgent) {
 }
 
 function updateFilterCounts(props, isAgent) {
-  const newCount = props.filter(p => !p.liked && !p.rejected && !p.client_comment).length;
+  const newCount = props.filter(p => !p.liked && !p.rejected).length;
   const likedCount = props.filter(p => p.liked && !p.rejected).length;
   const rejectedCount = props.filter(p => p.rejected).length;
   const prefix = isAgent ? 'agent' : 'c';
