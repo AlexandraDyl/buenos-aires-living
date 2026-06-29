@@ -142,6 +142,9 @@
   .filter-bar { display: flex; gap: 8px; margin-bottom: 1.5rem; flex-wrap: wrap; align-items: center; justify-content: space-between; }
   .prop-section-title { font-family: 'DM Serif Display', serif; font-size: 18px; color: var(--text); margin: 1.5rem 0 1rem; display: flex; align-items: center; gap: 8px; }
   .prop-section-title span { font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 600; color: var(--text3); background: var(--surface2); padding: 2px 8px; border-radius: 20px; }
+  .visit-badge { position: absolute; bottom: 10px; right: 10px; font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 20px; letter-spacing: 0.3px; display: flex; align-items: center; gap: 4px; }
+  .visit-badge.scheduled { background: #E8F4FD; color: #0066CC; }
+  .visit-badge.visited { background: #E6F4EA; color: #2E7D32; }
   .btn-reject { position: absolute; top: 10px; left: 10px; width: 34px; height: 34px; border-radius: 50%; background: white; border: 1px solid #DDDBD6; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.15s; font-size: 15px; font-weight: 700; color: #9799A6; line-height: 1; z-index: 2; opacity: 1 !important; visibility: visible !important; }
   .btn-reject:hover { background: #FDECEA; color: #B83232; border-color: #B83232; }
   .btn-reject.rejected { background: #FDECEA; color: #B83232; border-color: #B83232; }
@@ -858,6 +861,27 @@ let highlightedVisitId = null;
 
 function getLang() { return LANGS[lang]; }
 function t(k) { return LANGS[lang][k] || k; }
+
+function getVisitBadge(propUrl) {
+  if(!propUrl || !visits.length) return '';
+  const propVisits = visits.filter(v => v.url === propUrl);
+  if(!propVisits.length) return '';
+  
+  const today = new Date().toISOString().split('T')[0];
+  const past = propVisits.filter(v => v.date < today);
+  const future = propVisits.filter(v => v.date >= today);
+  
+  if(past.length) {
+    return '<div class="visit-badge visited">✓ Visitada</div>';
+  } else if(future.length) {
+    const next = future.sort((a,b)=>a.date.localeCompare(b.date))[0];
+    const d = next.date.split('-');
+    const dateStr = d[2]+'/'+d[1];
+    return '<div class="visit-badge scheduled">📅 '+dateStr+'</div>';
+  }
+  return '';
+}
+
 function getInitials(n) { return n.split(' ').slice(0,2).map(w=>w[0]).join('').toUpperCase(); }
 function sourceBadge(url) {
   if(!url) return '';
@@ -1391,6 +1415,7 @@ function renderPropsGrid(containerId, props, isAgent) {
         ${p.image_url ? `<img src="${p.image_url}" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover" onerror="this.style.display='none'">` : ''}
         ${sourceBadge(p.url)}
         <button class="btn-reject ${p.rejected?'rejected':''}" onclick="toggleReject('${p.id}')">✕</button>
+        ${getVisitBadge(p.url)}
         <div class="fav-btn ${p.liked?'liked':''}" onclick="toggleLike('${p.id}')">
           <svg viewBox="0 0 24 24" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
         </div>
