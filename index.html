@@ -862,9 +862,16 @@ let highlightedVisitId = null;
 function getLang() { return LANGS[lang]; }
 function t(k) { return LANGS[lang][k] || k; }
 
+function baseUrl(url) {
+  if(!url) return '';
+  // Remove query params and trailing slashes for comparison
+  try { return url.split('?')[0].split('#')[0].replace(/\/+$/, ''); } catch(e) { return url; }
+}
+
 function getVisitBadge(propUrl) {
   if(!propUrl || !visits.length) return '';
-  const propVisits = visits.filter(v => v.url === propUrl);
+  const base = baseUrl(propUrl);
+  const propVisits = visits.filter(v => baseUrl(v.url) === base);
   if(!propVisits.length) return '';
   
   const today = new Date().toISOString().split('T')[0];
