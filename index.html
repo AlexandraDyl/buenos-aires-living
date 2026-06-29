@@ -1503,6 +1503,8 @@ async function openClient(id) {
   showSpinner(false);
   renderClientSections(c.props, 'detail-props-grid', true);
   syncClientView(c);
+  // Re-render to show visit status (visits already loaded)
+  if(visits.length) renderClientSections(c.props, 'detail-props-grid', true);
 }
 function renderClientBudge(c) {
   const wrap = document.getElementById('detail-budget-wrap');
@@ -2160,6 +2162,8 @@ async function init() {
       await loadProperties(clientParam);
       // NOW show the client view - loading screen hides inside syncClientView
       syncClientView(c);
+      // Re-render after visits loaded to show visit status badges
+      if(visits.length) renderClientSections(c.props);
     } else {
       // Client not found
       document.getElementById('view-client').innerHTML = `
