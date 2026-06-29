@@ -868,10 +868,11 @@ function baseUrl(url) {
   try { return url.split('?')[0].split('#')[0].replace(/\/+$/, ''); } catch(e) { return url; }
 }
 
-function getVisitBadge(propUrl) {
+function getVisitBadge(propUrl, clientName) {
   if(!propUrl || !visits.length) return '';
   const base = baseUrl(propUrl);
-  const propVisits = visits.filter(v => baseUrl(v.url) === base);
+  const clientVisits = clientName ? visits.filter(v => v.client === clientName) : visits;
+  const propVisits = clientVisits.filter(v => baseUrl(v.url) === base);
   if(!propVisits.length) return '';
   
   const today = new Date().toISOString().split('T')[0];
@@ -1244,7 +1245,8 @@ function setClientFilter(f, el) {
   if(c) renderClientSections(c.props, 'client-props-grid', false);
 }
 
-function propCardHtml(p, isAgent) {
+function propCardHtml(p, isAgent, clientName) {
+  const _clientName = clientName || (state.currentClient ? state.clients.find(x=>x.id===state.currentClient)?.name : null);
   const imgHtml = p.image_url ? '<img src="'+p.image_url+'" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover" onerror="this.style.display=\'none\'">' : '';
   const badge = sourceBadge(p.url);
   const likedClass = p.liked ? 'liked' : '';
@@ -1422,7 +1424,7 @@ function renderPropsGrid(containerId, props, isAgent) {
         ${p.image_url ? `<img src="${p.image_url}" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover" onerror="this.style.display='none'">` : ''}
         ${sourceBadge(p.url)}
         <button class="btn-reject ${p.rejected?'rejected':''}" onclick="toggleReject('${p.id}')">✕</button>
-        ${getVisitBadge(p.url)}
+        ${getVisitBadge(p.url, _clientName)}
         <div class="fav-btn ${p.liked?'liked':''}" onclick="toggleLike('${p.id}')">
           <svg viewBox="0 0 24 24" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
         </div>
