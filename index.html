@@ -876,9 +876,15 @@ function getVisitStatus(propUrl) {
   const clientVisits = clientName ? visits.filter(v => v.client === clientName) : visits;
   const propVisits = clientVisits.filter(v => baseUrl(v.url) === base);
   if(!propVisits.length) return null;
-  const today = new Date().toISOString().split('T')[0];
-  if(propVisits.some(v => v.date < today)) return 'visited';
-  if(propVisits.some(v => v.date >= today)) return 'scheduled';
+  const now = new Date();
+  const visited = propVisits.some(v => {
+    const [y,m,d] = v.date.split('-').map(Number);
+    const [h,min] = (v.time||'00:00').split(':').map(Number);
+    const visitDt = new Date(y, m-1, d, h, min);
+    return visitDt < now;
+  });
+  if(visited) return 'visited';
+  if(propVisits.length) return 'scheduled';
   return null;
 }
 
