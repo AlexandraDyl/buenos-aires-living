@@ -1304,6 +1304,13 @@ function propCardHtml(p, isAgent, clientName) {
     commentHtml += '</div>';
   } else {
     commentHtml = '<div style="margin-top:6px">';
+    // Visit status badge for client
+    const _cvs = getVisitStatus(p.url);
+    if(_cvs === 'visited') {
+      commentHtml += '<div style="display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:4px 10px;border-radius:20px;background:#E6F4EA;color:#2E7D32;margin-bottom:8px">✓ Visto</div>';
+    } else if(_cvs === 'scheduled') {
+      commentHtml += '<div style="display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:4px 10px;border-radius:20px;background:#E8F4FD;color:#0066CC;margin-bottom:8px">📅 Visita agendada</div>';
+    }
     if(p.agent_comment) {
       commentHtml += '<div style="font-size:11px;font-weight:600;color:var(--accent);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px">Nota del agente</div>';
       commentHtml += '<div style="font-size:13px;padding:8px 10px;background:var(--accent-light);border-radius:var(--radius-sm);color:var(--accent-text);border-left:3px solid var(--accent);margin-bottom:8px">'+p.agent_comment+'</div>';
