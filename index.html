@@ -888,6 +888,20 @@ function getVisitStatus(propUrl) {
   return null;
 }
 
+async function geocodeAddress(address) {
+  try {
+    const q = encodeURIComponent(address + ', Buenos Aires, Argentina');
+    const res = await fetch('https://nominatim.openstreetmap.org/search?format=json&q=' + q + '&limit=1', {
+      headers: { 'Accept-Language': 'es' }
+    });
+    const data = await res.json();
+    if(data && data[0]) {
+      return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+    }
+  } catch(e) {}
+  return null;
+}
+
 function getVisitBadge(propUrl, clientName) {
   if(!propUrl || !visits.length) return '';
   const base = baseUrl(propUrl);
@@ -1181,10 +1195,14 @@ async function saveVisit() {
   const url=document.getElementById('f-url').value.trim();
   if(!address||!date) return;
   showSpinner(true);
-  const data = await api('addVisit', { date, time, address, client_name, url });
+  // Geocode address first
+  const coords = await geocodeAddress(address);
+  const lat = coords ? coords.lat : -34.61;
+  const lng = coords ? coords.lng : -58.43;
+  const data = await api('addVisit', { date, time, address, client_name, url, lat, lng });
   showSpinner(false);
   if(data.id) {
-    visits.push({ id:data.id, date, time, addr:address, client:client_name, url, lat:data.lat, lng:data.lng });
+    visits.push({ id:data.id, date, time, addr:address, client:client_name, url, lat, lng });
     document.getElementById('f-addr').value='';
     document.getElementById('f-client').value='';
     document.getElementById('f-url').value='';
@@ -1939,15 +1957,19 @@ async function confirmScheduleVisit() {
   if(!date || !address) return;
 
   showSpinner(true);
+  const coords2 = await geocodeAddress(address);
+  const lat2 = coords2 ? coords2.lat : -34.61;
+  const lng2 = coords2 ? coords2.lng : -58.43;
   const data = await api('addVisit', {
     date, time, address,
     client_name: c.name,
-    url: p.url
+    url: p.url,
+    lat: lat2, lng: lng2
   });
   showSpinner(false);
 
   if(data.id) {
-    visits.push({ id:data.id, date, time, addr:address, client:c.name, url:p.url, lat:data.lat, lng:data.lng });
+    visits.push({ id:data.id, date, time, addr:address, client:c.name, url:p.url, lat:lat2, lng:lng2 });
     closeScheduleVisit();
     // Switch to visits tab to show it
     switchTab('visits');
