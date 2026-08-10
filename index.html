@@ -1289,8 +1289,7 @@ function propCardHtml(p, isAgent, clientName) {
   const badge = sourceBadge(p.url);
   const likedClass = p.liked ? 'liked' : '';
   const rejectedClass = p.rejected ? 'rejected' : '';
-  // agentCommentHtml only shown in client view (agent sees it in textarea)
-  const agentCommentHtml = (!isAgent && p.agent_comment) ? '<div style="font-size:13px;padding:8px 10px;background:var(--accent-light);border-radius:var(--radius-sm);color:var(--accent-text);border-left:3px solid var(--accent)">'+p.agent_comment+'</div>' : '';
+  const agentCommentHtml = ''; // shown inside commentHtml instead
   const roomsChip = p.rooms ? '<span class="chip">'+p.rooms+'</span>' : '';
   const m2Chip = p.m2 ? '<span class="chip">'+p.m2+'</span>' : '';
   const floorChip = p.floor ? '<span class="chip">'+p.floor+'</span>' : '';
@@ -1336,7 +1335,10 @@ function propCardHtml(p, isAgent, clientName) {
     } else if(_cvs === 'scheduled') {
       commentHtml += '<div style="display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:4px 10px;border-radius:20px;background:#E8F4FD;color:#0066CC;margin-bottom:8px">📅 Visita agendada</div>';
     }
-  // agent_comment shown via agentCommentHtml variable above the card body - no need to repeat here
+    if(p.agent_comment) {
+      commentHtml += '<div style="font-size:11px;font-weight:600;color:var(--accent);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px">Nota del agente</div>';
+      commentHtml += '<div style="font-size:13px;padding:8px 10px;background:var(--accent-light);border-radius:var(--radius-sm);color:var(--accent-text);border-left:3px solid var(--accent);margin-bottom:8px">'+p.agent_comment+'</div>';
+    }
     commentHtml += '<div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px">Mi comentario</div>';
     commentHtml += '<textarea class="prop-comment" style="min-height:52px" placeholder="'+t('commentPh')+'" onblur="saveClientComment(\''+p.id+'\',this.value)">'+(p.client_comment||'')+'</textarea>';
     commentHtml += '</div>';
