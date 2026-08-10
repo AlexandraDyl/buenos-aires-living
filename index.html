@@ -1289,7 +1289,8 @@ function propCardHtml(p, isAgent, clientName) {
   const badge = sourceBadge(p.url);
   const likedClass = p.liked ? 'liked' : '';
   const rejectedClass = p.rejected ? 'rejected' : '';
-  const agentCommentHtml = p.agent_comment ? '<div style="font-size:13px;padding:8px 10px;background:var(--accent-light);border-radius:var(--radius-sm);color:var(--accent-text);border-left:3px solid var(--accent)">'+p.agent_comment+'</div>' : '';
+  // agentCommentHtml only shown in client view (agent sees it in textarea)
+  const agentCommentHtml = (!isAgent && p.agent_comment) ? '<div style="font-size:13px;padding:8px 10px;background:var(--accent-light);border-radius:var(--radius-sm);color:var(--accent-text);border-left:3px solid var(--accent)">'+p.agent_comment+'</div>' : '';
   const roomsChip = p.rooms ? '<span class="chip">'+p.rooms+'</span>' : '';
   const m2Chip = p.m2 ? '<span class="chip">'+p.m2+'</span>' : '';
   const floorChip = p.floor ? '<span class="chip">'+p.floor+'</span>' : '';
