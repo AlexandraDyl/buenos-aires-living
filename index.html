@@ -1769,7 +1769,7 @@ function setFilter(f,el) {
   state.filter=f;
   document.querySelectorAll('.filter-pills .pill').forEach(p=>p.classList.remove('active')); el.classList.add('active');
   const c=state.currentClient?state.clients.find(x=>x.id===state.currentClient):state.clients[0];
-  if(c) renderPropsGrid('client-props-grid',c.props,false);
+  if(c) renderClientSections(c.props, 'client-props-grid', false);
 }
 function copyLink() {
   const txt=document.getElementById('detail-link').textContent;
