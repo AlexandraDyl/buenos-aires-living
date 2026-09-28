@@ -541,6 +541,62 @@
       </div>
     </div>
 
+    <!-- INFO SECTION -->
+    <div id="client-info-section" style="margin-top:3rem;display:none">
+
+      <!-- Дополнительные платежи -->
+      <div style="margin-bottom:2rem">
+        <div style="font-family:'DM Serif Display',serif;font-size:22px;color:var(--text);margin-bottom:1.25rem">Дополнительные платежи при покупке</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+          <div style="background:var(--accent);border-radius:var(--radius);padding:1.5rem">
+            <div style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.6);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Комиссия агентства</div>
+            <div style="font-family:'DM Serif Display',serif;font-size:36px;color:#fff;margin-bottom:8px">4% + НДС</div>
+            <div style="font-size:13px;color:rgba(255,255,255,0.75);margin-bottom:6px">НДС — 21% от 4% платит покупатель.</div>
+            <div style="font-size:12px;color:rgba(255,255,255,0.55);font-style:italic">Комиссия делится между агентствами продавца и покупателя — Coldwell Banker Seniority получает 2%.</div>
+          </div>
+          <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.5rem;box-shadow:var(--shadow)">
+            <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Расходы нотариуса (Escribano)</div>
+            <div style="font-family:'DM Serif Display',serif;font-size:36px;color:var(--accent);margin-bottom:8px">~2% +</div>
+            <div style="font-size:13px;color:var(--text2)">от суммы сделки + стоимость оформления документов. Точная сумма просчитывается непосредственно перед сделкой.</div>
+          </div>
+        </div>
+        <div style="background:#C9A84C;border-radius:var(--radius-sm);padding:12px 18px;font-size:14px;font-weight:600;color:#fff;margin-bottom:10px">
+          Итого ~8% дополнительных расходов при покупке
+        </div>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px 18px;box-shadow:var(--shadow)">
+          <div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:6px">⚠️ Гербовый сбор (impuesto de sellos)</div>
+          <div style="font-size:13px;color:var(--text2)">Не уплачивается при покупке первой квартиры (единственное жильё). При последующих покупках — ставка 3,5% от суммы сделки, делится поровну: покупатель платит 1,75%.</div>
+        </div>
+      </div>
+
+      <!-- Этапы сделки -->
+      <div>
+        <div style="font-family:'DM Serif Display',serif;font-size:22px;color:var(--text);margin-bottom:1.25rem">Этапы сделки</div>
+        <div style="display:flex;flex-direction:column;gap:0;position:relative">
+          ${[
+            {n:1, title:'Reserva', tag:'$1.000–2.000', desc:'Покупатель вносит небольшую сумму — это открывает переговоры о цене с продавцом.'},
+            {n:2, title:'Переговоры о цене', tag:'~1 неделя', desc:'Если стороны не сходятся в цене — reserva полностью возвращается покупателю.'},
+            {n:3, title:'Проверка документов', tag:'Informe de inhibiciones · ~10 дней', desc:'Цена согласована — проверяются документы квартиры и собственника: обременения, право собственности.'},
+            {n:4, title:'Refuerzo', tag:'$4.000–10.000 · ~1 месяц', desc:'Вносится усиленный задаток. Начинает работу нотариус (выбирает покупатель) — проверяет и готовит документы к сделке.'},
+            {n:5, title:'Escritura (сделка)', tag:'Место выбирает продавец', desc:'Подписание документов о передаче права собственности — сделка завершена.'},
+          ].map(s => `
+            <div style="display:flex;align-items:flex-start;gap:16px;padding:16px 0;border-bottom:1px solid var(--border)">
+              <div style="width:36px;height:36px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-family:'DM Serif Display',serif;font-size:16px;flex-shrink:0">${s.n}</div>
+              <div style="flex:1">
+                <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:4px">
+                  <div style="font-size:15px;font-weight:600;color:var(--text)">${s.title}</div>
+                  <div style="font-size:12px;padding:2px 10px;border-radius:20px;background:var(--surface2);color:var(--text2);border:1px solid var(--border)">${s.tag}</div>
+                </div>
+                <div style="font-size:13px;color:var(--text2)">${s.desc}</div>
+              </div>
+            </div>`).join('')}
+        </div>
+        <div style="background:var(--accent);border-radius:var(--radius-sm);padding:14px 18px;margin-top:14px;font-size:14px;font-weight:600;color:#fff">
+          Весь процесс — от reserva до escritura — занимает минимум около 2 месяцев
+        </div>
+      </div>
+
+    </div>
   </div>
 </div>
 
@@ -1647,6 +1703,8 @@ function syncClientView(c) {
   const clientVisitsCount = visits.filter(v=>v.client===c.name).length;
   const visSection = document.getElementById('client-visits-section');
   if(visSection) visSection.style.display = clientVisitsCount ? 'block' : 'none';
+  const infoSection = document.getElementById('client-info-section');
+  if(infoSection) infoSection.style.display = 'block';
   renderCalC(c.name);
 }
 function rerenderCurrent() {
