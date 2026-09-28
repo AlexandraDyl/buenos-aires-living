@@ -400,6 +400,12 @@
           <input type="text" class="input-floor" id="new-floor">
         </div>
         <div class="input-row" style="margin-top:8px">
+          <input type="number" id="new-covered" style="width:100px" placeholder="Cubierta m²">
+          <input type="number" id="new-semicov" style="width:110px" placeholder="Semicub. m²">
+          <input type="number" id="new-open" style="width:100px" placeholder="Descub. m²">
+          <input type="number" id="new-avg-price" style="width:130px" placeholder="Precio m² barrio">
+        </div>
+        <div class="input-row" style="margin-top:8px">
           <input type="text" id="new-photo" style="flex:1" placeholder="">
         </div>
       </div>
@@ -627,6 +633,12 @@
       <div class="form-field"><label>m²</label><input type="text" id="ep-m2"></div>
       <div class="form-field full"><label>Piso / extra</label><input type="text" id="ep-floor"></div>
       <div class="form-field full"><label>URL de foto (click derecho → copiar dirección de imagen)</label><input type="text" id="ep-photo"></div>
+      <div class="edit-grid" style="grid-column:1/-1;gap:8px;display:grid;grid-template-columns:1fr 1fr 1fr 1fr">
+        <div class="form-field"><label>Cubierta m²</label><input type="number" id="ep-covered"></div>
+        <div class="form-field"><label>Semicub. m²</label><input type="number" id="ep-semicov"></div>
+        <div class="form-field"><label>Descub. m²</label><input type="number" id="ep-open"></div>
+        <div class="form-field"><label>Precio m² barrio</label><input type="number" id="ep-avg-price"></div>
+      </div>
     </div>
     <div class="modal-footer">
       <button class="btn" onclick="closeEditProp()">Cancelar</button>
@@ -834,7 +846,11 @@ async function loadProperties(clientId) {
         comment: String(p.comment||''),
         agent_comment: String(p.agent_comment||''),
         client_comment: String(p.client_comment||''),
-        image_url: String(p.image_url||'')
+        image_url: String(p.image_url||''),
+        covered: p.covered||'',
+        semicov: p.semicov||'',
+        open_area: p.open_area||'',
+        avg_price: p.avg_price||''
       }));
       c.props.forEach(p => { if(p.image_url) imageCache[p.id] = p.image_url; });
     }
@@ -866,6 +882,37 @@ function baseUrl(url) {
   if(!url) return '';
   // Remove query params and trailing slashes for comparison
   try { return url.split('?')[0].split('#')[0].replace(/\/+$/, ''); } catch(e) { return url; }
+}
+
+function calcM2Stats(p) {
+  const covered = parseFloat(p.covered) || 0;
+  const semicov = parseFloat(p.semicov) || 0;
+  const open = parseFloat(p.open_area) || 0;
+  const weighted = covered * 1 + semicov * 0.5 + open * 0.25;
+  const price = parseFloat(String(p.price || '').replace(/[^0-9.]/g, ''));
+  const pricePerM2 = (weighted > 0 && price > 0) ? Math.round(price / weighted) : null;
+  const avgBarrio = parseFloat(p.avg_price) || null;
+  return { weighted: weighted > 0 ? Math.round(weighted * 10) / 10 : null, pricePerM2, avgBarrio };
+}
+
+function m2StatsHtml(p) {
+  const s = calcM2Stats(p);
+  if(!s.weighted && !s.avgBarrio) return '';
+  let html = '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px">';
+  if(s.weighted) {
+    html += '<span style="font-size:11px;padding:3px 8px;border-radius:20px;background:var(--surface2);color:var(--text2);border:1px solid var(--border)">📐 '+s.weighted+' m² pond.</span>';
+  }
+  if(s.pricePerM2) {
+    html += '<span style="font-size:11px;padding:3px 8px;border-radius:20px;background:var(--surface2);color:var(--text2);border:1px solid var(--border)">USD '+s.pricePerM2.toLocaleString()+'/m²</span>';
+  }
+  if(s.avgBarrio) {
+    const diff = s.pricePerM2 ? s.pricePerM2 - s.avgBarrio : null;
+    const color = diff === null ? 'var(--text2)' : diff > 0 ? '#B83232' : '#2E7D32';
+    const arrow = diff === null ? '' : diff > 0 ? ' ↑' : ' ↓';
+    html += '<span style="font-size:11px;padding:3px 8px;border-radius:20px;background:var(--surface2);color:'+color+';border:1px solid var(--border)">Barrio: USD '+s.avgBarrio.toLocaleString()+'/m²'+arrow+'</span>';
+  }
+  html += '</div>';
+  return html;
 }
 
 function getVisitStatus(propUrl) {
@@ -1355,6 +1402,7 @@ function propCardHtml(p, isAgent, clientName) {
     + '<div class="prop-price">'+p.price+'</div>'
     + '<div class="prop-addr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>'+p.addr+'</div>'
     + '<div class="chips">'+roomsChip+m2Chip+floorChip+'</div>'
+    + m2StatsHtml(p)
     + agentCommentHtml
     + '<div class="prop-actions">'+actionsHtml+'</div>'
     + commentHtml
@@ -1489,6 +1537,7 @@ function renderPropsGrid(containerId, props, isAgent) {
           ${p.m2?`<span class="chip">${p.m2}</span>`:''}
           ${p.floor?`<span class="chip">${p.floor}</span>`:''}
         </div>
+        ${m2StatsHtml(p)}
         <div class="prop-actions">
           <a href="${p.url}" target="_blank" class="btn btn-sm"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>${t('viewPortal')}</a>
           ${isAgent && p.liked ? (getVisitStatus(p.url)==='visited' ? '<button class="btn btn-sm" style="background:#E6F4EA;color:#2E7D32;border-color:#C8E6C9;cursor:default">✓ Visto</button>' : getVisitStatus(p.url)==='scheduled' ? `<button class="btn btn-sm" onclick="scheduleVisitFromProp('${p.id}')" style="background:#E8F4FD;color:#0066CC;border-color:#B3D9F7">📅 Agendado</button>` : `<button class="btn btn-sm" onclick="scheduleVisitFromProp('${p.id}')" style="background:var(--accent-light);color:var(--accent-text);border-color:var(--accent-light)">Agendar visita</button>`) : ''}
@@ -1657,7 +1706,11 @@ async function addProperty() {
     address: document.getElementById('new-addr').value.trim()||'—',
     rooms: document.getElementById('new-rooms').value.trim(),
     sqm: document.getElementById('new-m2').value.trim(),
-    floor_info: document.getElementById('new-floor').value.trim()
+    floor_info: document.getElementById('new-floor').value.trim(),
+    covered: document.getElementById('new-covered').value.trim(),
+    semicov: document.getElementById('new-semicov').value.trim(),
+    open_area: document.getElementById('new-open').value.trim(),
+    avg_price: document.getElementById('new-avg-price').value.trim()
   };
   showSpinner(true);
   const data = await api('addProperty', propData);
@@ -1665,10 +1718,10 @@ async function addProperty() {
   console.log('addProperty response:', data);
   if(data.id) {
     const photoUrl = document.getElementById('new-photo').value.trim();
-    const newProp = {id:data.id,url,price:propData.price,addr:propData.address,rooms:propData.rooms,m2:propData.sqm,floor:propData.floor_info,liked:false,comment:'',agent_comment:'',client_comment:'',image_url:photoUrl,rejected:false};
+    const newProp = {id:data.id,url,price:propData.price,addr:propData.address,rooms:propData.rooms,m2:propData.sqm,floor:propData.floor_info,liked:false,comment:'',agent_comment:'',client_comment:'',image_url:photoUrl,rejected:false,covered:propData.covered||'',semicov:propData.semicov||'',open_area:propData.open_area||'',avg_price:propData.avg_price||''};
     c.props.push(newProp);
     if(photoUrl) imageCache[data.id] = photoUrl;
-    ['new-url','new-price','new-addr','new-rooms','new-m2','new-floor','new-photo'].forEach(id=>{document.getElementById(id).value='';});
+    ['new-url','new-price','new-addr','new-rooms','new-m2','new-floor','new-photo','new-covered','new-semicov','new-open','new-avg-price'].forEach(id=>{document.getElementById(id).value='';});
     renderClientSections(c.props,'detail-props-grid',true); syncClientView(c);
     c.prop_count = c.props.length;
     // Save photo URL if provided manually, otherwise try auto-fetch
@@ -2038,6 +2091,10 @@ function openEditProp(pid) {
   document.getElementById('ep-m2').value = p.m2 || '';
   document.getElementById('ep-floor').value = p.floor || '';
   document.getElementById('ep-photo').value = p.image_url || '';
+  document.getElementById('ep-covered').value = p.covered || '';
+  document.getElementById('ep-semicov').value = p.semicov || '';
+  document.getElementById('ep-open').value = p.open_area || '';
+  document.getElementById('ep-avg-price').value = p.avg_price || '';
   document.getElementById('edit-prop-modal').classList.add('open');
 }
 
@@ -2059,20 +2116,26 @@ async function saveEditProp() {
   const newM2    = document.getElementById('ep-m2').value.trim();
   const newFloor = document.getElementById('ep-floor').value.trim();
   const newPhoto = document.getElementById('ep-photo').value.trim();
+  const newCovered  = document.getElementById('ep-covered').value.trim();
+  const newSemicov  = document.getElementById('ep-semicov').value.trim();
+  const newOpen     = document.getElementById('ep-open').value.trim();
+  const newAvgPrice = document.getElementById('ep-avg-price').value.trim();
 
   showSpinner(true);
   await api('updateProperty', {
     id: editingPropId,
     url: newUrl, price: newPrice, address: newAddr,
     rooms: newRooms, sqm: newM2, floor_info: newFloor,
-    image_url: newPhoto
+    image_url: newPhoto, covered: newCovered, semicov: newSemicov,
+    open_area: newOpen, avg_price: newAvgPrice
   });
   showSpinner(false);
 
   // Update local state
   p.url = newUrl; p.price = newPrice; p.addr = newAddr;
   p.rooms = newRooms; p.m2 = newM2; p.floor = newFloor;
-  p.image_url = newPhoto;
+  p.image_url = newPhoto; p.covered = newCovered;
+  p.semicov = newSemicov; p.open_area = newOpen; p.avg_price = newAvgPrice;
   if(newPhoto) imageCache[editingPropId] = newPhoto;
 
   closeEditProp();
