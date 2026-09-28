@@ -572,24 +572,57 @@
       <!-- Этапы сделки -->
       <div>
         <div style="font-family:'DM Serif Display',serif;font-size:22px;color:var(--text);margin-bottom:1.25rem">Этапы сделки</div>
-        <div style="display:flex;flex-direction:column;gap:0;position:relative">
-          ${[
-            {n:1, title:'Reserva', tag:'$1.000–2.000', desc:'Покупатель вносит небольшую сумму — это открывает переговоры о цене с продавцом.'},
-            {n:2, title:'Переговоры о цене', tag:'~1 неделя', desc:'Если стороны не сходятся в цене — reserva полностью возвращается покупателю.'},
-            {n:3, title:'Проверка документов', tag:'Informe de inhibiciones · ~10 дней', desc:'Цена согласована — проверяются документы квартиры и собственника: обременения, право собственности.'},
-            {n:4, title:'Refuerzo', tag:'$4.000–10.000 · ~1 месяц', desc:'Вносится усиленный задаток. Начинает работу нотариус (выбирает покупатель) — проверяет и готовит документы к сделке.'},
-            {n:5, title:'Escritura (сделка)', tag:'Место выбирает продавец', desc:'Подписание документов о передаче права собственности — сделка завершена.'},
-          ].map(s => `
-            <div style="display:flex;align-items:flex-start;gap:16px;padding:16px 0;border-bottom:1px solid var(--border)">
-              <div style="width:36px;height:36px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-family:'DM Serif Display',serif;font-size:16px;flex-shrink:0">${s.n}</div>
-              <div style="flex:1">
-                <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:4px">
-                  <div style="font-size:15px;font-weight:600;color:var(--text)">${s.title}</div>
-                  <div style="font-size:12px;padding:2px 10px;border-radius:20px;background:var(--surface2);color:var(--text2);border:1px solid var(--border)">${s.tag}</div>
-                </div>
-                <div style="font-size:13px;color:var(--text2)">${s.desc}</div>
+<div style="display:flex;flex-direction:column;gap:0">
+          <div style="display:flex;align-items:flex-start;gap:16px;padding:16px 0;border-bottom:1px solid var(--border)">
+            <div style="width:36px;height:36px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-family:'DM Serif Display',serif;font-size:16px;flex-shrink:0">1</div>
+            <div style="flex:1">
+              <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:4px">
+                <div style="font-size:15px;font-weight:600;color:var(--text)">Reserva</div>
+                <div style="font-size:12px;padding:2px 10px;border-radius:20px;background:var(--surface2);color:var(--text2);border:1px solid var(--border)">$1.000–2.000</div>
               </div>
-            </div>`).join('')}
+              <div style="font-size:13px;color:var(--text2)">Покупатель вносит небольшую сумму — это открывает переговоры о цене с продавцом.</div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:flex-start;gap:16px;padding:16px 0;border-bottom:1px solid var(--border)">
+            <div style="width:36px;height:36px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-family:'DM Serif Display',serif;font-size:16px;flex-shrink:0">2</div>
+            <div style="flex:1">
+              <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:4px">
+                <div style="font-size:15px;font-weight:600;color:var(--text)">Переговоры о цене</div>
+                <div style="font-size:12px;padding:2px 10px;border-radius:20px;background:var(--surface2);color:var(--text2);border:1px solid var(--border)">~1 неделя</div>
+              </div>
+              <div style="font-size:13px;color:var(--text2)">Если стороны не сходятся в цене — reserva полностью возвращается покупателю.</div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:flex-start;gap:16px;padding:16px 0;border-bottom:1px solid var(--border)">
+            <div style="width:36px;height:36px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-family:'DM Serif Display',serif;font-size:16px;flex-shrink:0">3</div>
+            <div style="flex:1">
+              <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:4px">
+                <div style="font-size:15px;font-weight:600;color:var(--text)">Проверка документов</div>
+                <div style="font-size:12px;padding:2px 10px;border-radius:20px;background:var(--surface2);color:var(--text2);border:1px solid var(--border)">Informe de inhibiciones · ~10 дней</div>
+              </div>
+              <div style="font-size:13px;color:var(--text2)">Цена согласована — проверяются документы квартиры и собственника: обременения, право собственности.</div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:flex-start;gap:16px;padding:16px 0;border-bottom:1px solid var(--border)">
+            <div style="width:36px;height:36px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-family:'DM Serif Display',serif;font-size:16px;flex-shrink:0">4</div>
+            <div style="flex:1">
+              <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:4px">
+                <div style="font-size:15px;font-weight:600;color:var(--text)">Refuerzo</div>
+                <div style="font-size:12px;padding:2px 10px;border-radius:20px;background:var(--surface2);color:var(--text2);border:1px solid var(--border)">$4.000–10.000 · ~1 месяц</div>
+              </div>
+              <div style="font-size:13px;color:var(--text2)">Вносится усиленный задаток. Начинает работу нотариус (выбирает покупатель) — проверяет и готовит документы к сделке.</div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:flex-start;gap:16px;padding:16px 0;border-bottom:1px solid var(--border)">
+            <div style="width:36px;height:36px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-family:'DM Serif Display',serif;font-size:16px;flex-shrink:0">5</div>
+            <div style="flex:1">
+              <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:4px">
+                <div style="font-size:15px;font-weight:600;color:var(--text)">Escritura (сделка)</div>
+                <div style="font-size:12px;padding:2px 10px;border-radius:20px;background:var(--surface2);color:var(--text2);border:1px solid var(--border)">Место выбирает продавец</div>
+              </div>
+              <div style="font-size:13px;color:var(--text2)">Подписание документов о передаче права собственности — сделка завершена.</div>
+            </div>
+          </div>
         </div>
         <div style="background:var(--accent);border-radius:var(--radius-sm);padding:14px 18px;margin-top:14px;font-size:14px;font-weight:600;color:#fff">
           Весь процесс — от reserva до escritura — занимает минимум около 2 месяцев
