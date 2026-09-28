@@ -978,21 +978,20 @@ function calcM2Stats(p) {
   const semicov = parseFloat(p.semicov) || 0;
   const open = parseFloat(p.open_area) || 0;
   const weighted = covered * 1 + semicov * 0.5 + open * 0.25;
-  const price = parseFloat(String(p.price || '').replace(/[^0-9.]/g, ''));
+  // Remove thousand separators (dots in Argentine format) before parsing price
+  const priceStr = String(p.price || '').replace(/[^0-9,.]/g, '').replace(/\.(?=\d{3})/g, '').replace(',', '.');
+  const price = parseFloat(priceStr) || 0;
   const pricePerM2 = (weighted > 0 && price > 0) ? Math.round(price / weighted) : null;
-  const avgBarrio = parseFloat(p.avg_price) || null;
+  const avgBarrio = parseFloat(String(p.avg_price || '').replace(/[^0-9.]/g, '')) || null;
   return { weighted: weighted > 0 ? Math.round(weighted * 10) / 10 : null, pricePerM2, avgBarrio };
 }
 
 function m2StatsHtml(p) {
   const s = calcM2Stats(p);
-  if(!s.weighted && !s.avgBarrio) return '';
+  if(!s.pricePerM2 && !s.avgBarrio) return '';
   let html = '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px">';
-  if(s.weighted) {
-    html += '<span style="font-size:11px;padding:3px 8px;border-radius:20px;background:var(--surface2);color:var(--text2);border:1px solid var(--border)">📐 '+s.weighted+' m² pond.</span>';
-  }
   if(s.pricePerM2) {
-    html += '<span style="font-size:11px;padding:3px 8px;border-radius:20px;background:var(--surface2);color:var(--text2);border:1px solid var(--border)">USD '+s.pricePerM2.toLocaleString()+'/m²</span>';
+    html += '<span style="font-size:11px;padding:3px 8px;border-radius:20px;background:var(--surface2);color:var(--text2);border:1px solid var(--border)">USD '+s.pricePerM2.toLocaleString()+'/m² pond.</span>';
   }
   if(s.avgBarrio) {
     const diff = s.pricePerM2 ? s.pricePerM2 - s.avgBarrio : null;
