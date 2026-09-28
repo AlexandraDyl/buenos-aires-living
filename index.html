@@ -624,7 +624,7 @@
             </div>
           </div>
         </div>
-        <div style="background:var(--accent);border-radius:var(--radius-sm);padding:14px 18px;margin-top:14px;font-size:14px;font-weight:600;color:#fff">
+        <div id="info-steps-footer" style="background:var(--accent);border-radius:var(--radius-sm);padding:14px 18px;margin-top:14px;font-size:14px;font-weight:600;color:#fff">
           Весь процесс — от reserva до escritura — занимает минимум около 2 месяцев
         </div>
       </div>
@@ -793,6 +793,24 @@ const LANGS = {
     addVisit:'Agregar visita', vCancel:'Cancelar', vSave:'Guardar',
     fAddrPh:'Dirección (ej: Av. Libertador 1500)', fPhotoPh:'URL de foto (click derecho → copiar dirección de imagen)', fClientPh:'Cliente', fUrlPh:'Enlace propiedad (opcional)',
     noVisits:'Sin visitas este día',
+    infoPaymentsTitle:'Pagos adicionales al comprar',
+    infoAgencyFee:'Comisión de la agencia',
+    infoAgencyFeeDesc:'IVA — 21% sobre el 4% lo paga el comprador.',
+    infoAgencyFeeNote:'La comisión se divide entre las agencias del vendedor y comprador — Coldwell Banker Seniority recibe el 2%.',
+    infoNotaryFee:'Gastos del escribano',
+    infoNotaryFeeDesc:'de la operación + costo de documentación. El monto exacto se calcula antes de la escritura.',
+    infoTotalFee:'Total ~8% de gastos adicionales al comprar',
+    infoStampTax:'⚠️ Impuesto de sellos',
+    infoStampTaxDesc:'No se aplica en la compra del primer inmueble (única vivienda). En compras posteriores — tasa del 3,5% del valor de la operación, dividida en partes iguales: el comprador paga el 1,75%.',
+    infoStepsTitle:'Etapas de la operación',
+    infoSteps:[
+      {title:'Reserva', tag:'$1.000–2.000', desc:'El comprador deposita una suma pequeña — esto abre la negociación del precio con el vendedor.'},
+      {title:'Negociación de precio', tag:'~1 semana', desc:'Si las partes no llegan a un acuerdo — la reserva se devuelve íntegramente al comprador.'},
+      {title:'Verificación de documentos', tag:'Informe de inhibiciones · ~10 días', desc:'Precio acordado — se verifican los documentos del inmueble y del titular: cargas, titularidad.'},
+      {title:'Refuerzo', tag:'$4.000–10.000 · ~1 mes', desc:'Se deposita el anticipo reforzado. Comienza el trabajo del escribano (elegido por el comprador) — revisa y prepara documentos.'},
+      {title:'Escritura', tag:'El lugar lo elige el vendedor', desc:'Firma de los documentos de transferencia de propiedad — operación concluida.'},
+    ],
+    infoStepsFooter:'Todo el proceso — desde la reserva hasta la escritura — lleva como mínimo unos 2 meses',
     MONTHS:['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'],
     DAYS:['Lu','Ma','Mi','Ju','Vi','Sa','Do'],
     visitCount:(n)=>`${n} visita${n!==1?'s':''}`, estDist:(km)=>`~${km} km est.`,
@@ -820,6 +838,24 @@ const LANGS = {
     addVisit:'Add visit', vCancel:'Cancel', vSave:'Save',
     fAddrPh:'Address (e.g. Av. Libertador 1500)', fPhotoPh:'Photo URL (right click image → copy image address)', fClientPh:'Client', fUrlPh:'Property link (optional)',
     noVisits:'No visits on this day',
+    infoPaymentsTitle:'Additional costs when buying',
+    infoAgencyFee:'Agency commission',
+    infoAgencyFeeDesc:'VAT — 21% on the 4% is paid by the buyer.',
+    infoAgencyFeeNote:'The commission is split between the seller's and buyer's agencies — Coldwell Banker Seniority receives 2%.',
+    infoNotaryFee:'Notary fees (Escribano)',
+    infoNotaryFeeDesc:'of the transaction amount + document processing costs. Exact amount is calculated before closing.',
+    infoTotalFee:'Total ~8% additional costs when buying',
+    infoStampTax:'⚠️ Stamp tax (Impuesto de sellos)',
+    infoStampTaxDesc:'Not applicable on the purchase of a first property (sole residence). On subsequent purchases — rate of 3.5% of transaction value, split equally: buyer pays 1.75%.',
+    infoStepsTitle:'Transaction stages',
+    infoSteps:[
+      {title:'Reserva', tag:'$1,000–2,000', desc:'The buyer deposits a small amount — this opens price negotiations with the seller.'},
+      {title:'Price negotiation', tag:'~1 week', desc:'If the parties cannot agree on a price — the reserva is fully returned to the buyer.'},
+      {title:'Document verification', tag:'Informe de inhibiciones · ~10 days', desc:'Price agreed — property and owner documents are verified: encumbrances, ownership title.'},
+      {title:'Refuerzo', tag:'$4,000–10,000 · ~1 month', desc:'Reinforced deposit is made. Notary (chosen by buyer) begins work — reviews and prepares documents for closing.'},
+      {title:'Escritura (closing)', tag:'Location chosen by seller', desc:'Signing of property transfer documents — transaction complete.'},
+    ],
+    infoStepsFooter:'The entire process — from reserva to escritura — takes a minimum of about 2 months',
     MONTHS:['January','February','March','April','May','June','July','August','September','October','November','December'],
     DAYS:['Mo','Tu','We','Th','Fr','Sa','Su'],
     visitCount:(n)=>`${n} visit${n!==1?'s':''}`, estDist:(km)=>`~${km} km est.`,
@@ -847,6 +883,24 @@ const LANGS = {
     addVisit:'Добавить визит', vCancel:'Отмена', vSave:'Сохранить',
     fAddrPh:'Адрес (напр. Av. Libertador 1500)', fPhotoPh:'URL фото (правая кнопка → копировать адрес изображения)', fClientPh:'Клиент', fUrlPh:'Ссылка на объект (опц.)',
     noVisits:'Визитов в этот день нет',
+    infoPaymentsTitle:'Дополнительные платежи при покупке',
+    infoAgencyFee:'Комиссия агентства',
+    infoAgencyFeeDesc:'НДС — 21% от 4% платит покупатель.',
+    infoAgencyFeeNote:'Комиссия делится между агентствами продавца и покупателя — Coldwell Banker Seniority получает 2%.',
+    infoNotaryFee:'Расходы нотариуса (Escribano)',
+    infoNotaryFeeDesc:'от суммы сделки + стоимость оформления документов. Точная сумма просчитывается непосредственно перед сделкой.',
+    infoTotalFee:'Итого ~8% дополнительных расходов при покупке',
+    infoStampTax:'⚠️ Гербовый сбор (impuesto de sellos)',
+    infoStampTaxDesc:'Не уплачивается при покупке первой квартиры (единственное жильё). При последующих покупках — ставка 3,5% от суммы сделки, делится поровну: покупатель платит 1,75%.',
+    infoStepsTitle:'Этапы сделки',
+    infoSteps:[
+      {title:'Reserva', tag:'$1.000–2.000', desc:'Покупатель вносит небольшую сумму — это открывает переговоры о цене с продавцом.'},
+      {title:'Переговоры о цене', tag:'~1 неделя', desc:'Если стороны не сходятся в цене — reserva полностью возвращается покупателю.'},
+      {title:'Проверка документов', tag:'Informe de inhibiciones · ~10 дней', desc:'Цена согласована — проверяются документы квартиры и собственника: обременения, право собственности.'},
+      {title:'Refuerzo', tag:'$4.000–10.000 · ~1 месяц', desc:'Вносится усиленный задаток. Начинает работу нотариус (выбирает покупатель) — проверяет и готовит документы к сделке.'},
+      {title:'Escritura (сделка)', tag:'Место выбирает продавец', desc:'Подписание документов о передаче права собственности — сделка завершена.'},
+    ],
+    infoStepsFooter:'Весь процесс — от reserva до escritura — занимает минимум около 2 месяцев',
     MONTHS:['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'],
     DAYS:['Пн','Вт','Ср','Чт','Пт','Сб','Вс'],
     visitCount:(n)=>`${n} визит${n===1?'':n<5?'а':'ов'}`, estDist:(km)=>`~${km} км ест.`,
@@ -1119,6 +1173,35 @@ function applyTranslations() {
   set('lbl-v-save', Lx.vSave);
   ph('f-addr', Lx.fAddrPh); ph('f-client', Lx.fClientPh); ph('f-url', Lx.fUrlPh); ph('new-photo', Lx.fPhotoPh||'URL de foto');
   const ccEl = document.getElementById('client-count'); if(ccEl) set('client-count-lbl', Lx.heroLbl(parseInt(ccEl.textContent)||0));
+  // Info section translations
+  if(Lx.infoPaymentsTitle) {
+    set('info-payments-title', Lx.infoPaymentsTitle);
+    set('info-agency-fee-title', Lx.infoAgencyFee);
+    set('info-agency-fee-desc', Lx.infoAgencyFeeDesc);
+    set('info-agency-fee-note', Lx.infoAgencyFeeNote);
+    set('info-notary-fee-title', Lx.infoNotaryFee);
+    set('info-notary-fee-desc', Lx.infoNotaryFeeDesc);
+    set('info-total-fee', Lx.infoTotalFee);
+    set('info-stamp-tax-title', Lx.infoStampTax);
+    set('info-stamp-tax-desc', Lx.infoStampTaxDesc);
+    set('info-steps-title', Lx.infoStepsTitle);
+    set('info-steps-footer', Lx.infoStepsFooter);
+    // Re-render steps list
+    const stepsList = document.getElementById('info-steps-list');
+    if(stepsList && Lx.infoSteps) {
+      stepsList.innerHTML = Lx.infoSteps.map(s => 
+        '<div style="display:flex;align-items:flex-start;gap:16px;padding:16px 0;border-bottom:1px solid var(--border)">'
+        + '<div style="width:36px;height:36px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-family:DM Serif Display,serif;font-size:16px;flex-shrink:0">' + (Lx.infoSteps.indexOf(s)+1) + '</div>'
+        + '<div style="flex:1">'
+        + '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:4px">'
+        + '<div style="font-size:15px;font-weight:600;color:var(--text)">' + s.title + '</div>'
+        + '<div style="font-size:12px;padding:2px 10px;border-radius:20px;background:var(--surface2);color:var(--text2);border:1px solid var(--border)">' + s.tag + '</div>'
+        + '</div>'
+        + '<div style="font-size:13px;color:var(--text2)">' + s.desc + '</div>'
+        + '</div></div>'
+      ).join('');
+    }
+  }
 }
 
 /* ---- CALENDAR ---- */
