@@ -910,7 +910,7 @@ const LANGS = {
 // =========================================================
 //  PASTE YOUR APPS SCRIPT URL HERE after deploying
 // =========================================================
-const API_URL = 'https://script.google.com/macros/s/AKfycbxn46xJ8btf2RI_DelbshXRb8FhtvQ9qCl7nVWXMwB1FTaQD_2AAJNLchXf74HEVOTe/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbw8xbnxE4WlIFdiSLPOCc4zEbf9psRq3NSsl6brr5FRMaLXEWeHMxNWoG9XgCnqp_Hu/exec';
 // =========================================================
 
 let lang = 'es';
@@ -2281,6 +2281,7 @@ function openEditProp(pid) {
   document.getElementById('ep-semicov').value = p.semicov || '';
   document.getElementById('ep-open').value = p.open_area || '';
   document.getElementById('ep-avg-price').value = p.avg_price || '';
+  document.getElementById('edit-prop-modal').dataset.pid = pid;
   document.getElementById('edit-prop-modal').classList.add('open');
 }
 
@@ -2290,11 +2291,7 @@ function closeEditProp() {
 }
 
 async function saveEditProp() {
-  if(!editingPropId) return;
-  const c = state.clients.find(x=>x.id===state.currentClient);
-  const p = c && c.props.find(x=>x.id===editingPropId);
-  if(!p) return;
-
+  // Read all field values FIRST before any checks that might fail
   const newUrl   = document.getElementById('ep-url').value.trim();
   const newPrice = document.getElementById('ep-price').value.trim();
   const newAddr  = document.getElementById('ep-addr').value.trim();
@@ -2307,9 +2304,18 @@ async function saveEditProp() {
   const newOpen     = document.getElementById('ep-open').value.trim();
   const newAvgPrice = document.getElementById('ep-avg-price').value.trim();
 
+  // Use stored editingPropId or try to get it from modal
+  const pid = editingPropId || document.getElementById('edit-prop-modal').dataset.pid;
+  if(!pid) { console.error('No editingPropId'); return; }
+  const c = state.clients.find(x=>x.id===state.currentClient);
+  const p = c && c.props.find(x=>x.id===pid);
+  if(!p) return;
+  // Ensure editingPropId is set
+  editingPropId = pid;
+
   showSpinner(true);
   await api('updateProperty', {
-    id: editingPropId,
+    id: pid,
     url: newUrl, price: newPrice, address: newAddr,
     rooms: newRooms, sqm: newM2, floor_info: newFloor,
     image_url: newPhoto, covered: newCovered, semicov: newSemicov,
@@ -2322,7 +2328,7 @@ async function saveEditProp() {
   p.rooms = newRooms; p.m2 = newM2; p.floor = newFloor;
   p.image_url = newPhoto; p.covered = newCovered;
   p.semicov = newSemicov; p.open_area = newOpen; p.avg_price = newAvgPrice;
-  if(newPhoto) imageCache[editingPropId] = newPhoto;
+  if(newPhoto) imageCache[pid] = newPhoto;
 
   closeEditProp();
   renderClientSections(c.props, 'detail-props-grid', true);
