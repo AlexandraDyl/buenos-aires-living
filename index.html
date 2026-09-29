@@ -1035,7 +1035,10 @@ function calcM2Stats(p) {
   // Remove thousand separators (dots in Argentine format) before parsing price
   const priceStr = String(p.price || '').replace(/[^0-9,.]/g, '').replace(/\.(?=\d{3})/g, '').replace(',', '.');
   const price = parseFloat(priceStr) || 0;
-  const pricePerM2 = (weighted > 0 && price > 0) ? Math.round(price / weighted) : null;
+  // Use weighted area if available, otherwise fall back to m2 field
+  const m2Fallback = parseFloat(String(p.m2 || '')) || 0;
+  const area = weighted > 0 ? weighted : m2Fallback;
+  const pricePerM2 = (area > 0 && price > 0) ? Math.round(price / area) : null;
   const avgBarrio = parseFloat(String(p.avg_price || '').replace(/[^0-9.]/g, '')) || null;
   return { weighted: weighted > 0 ? Math.round(weighted * 10) / 10 : null, pricePerM2, avgBarrio };
 }
