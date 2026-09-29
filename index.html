@@ -1900,8 +1900,11 @@ async function addProperty() {
     ['new-url','new-price','new-addr','new-rooms','new-m2','new-floor','new-photo','new-covered','new-semicov','new-open','new-avg-price'].forEach(id=>{document.getElementById(id).value='';});
     renderClientSections(c.props,'detail-props-grid',true); syncClientView(c);
     c.prop_count = c.props.length;
-    // Try auto-fetch image in background if no manual photo
-    if(!photoUrl) {
+    // Save photo via updateProperty to ensure it's stored
+    if(photoUrl) {
+      api('updateProperty', { id: data.id, image_url: photoUrl });
+    } else {
+      // Try auto-fetch image in background
       fetchOgImage(url, data.id).then(imgUrl => {
         if(imgUrl) {
           imageCache[data.id] = imgUrl;
