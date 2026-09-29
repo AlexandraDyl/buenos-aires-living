@@ -2291,30 +2291,34 @@ function closeEditProp() {
 }
 
 async function saveEditProp() {
-  // Read all field values FIRST before any checks that might fail
-  const newUrl   = document.getElementById('ep-url').value.trim();
-  const newPrice = document.getElementById('ep-price').value.trim();
-  const newAddr  = document.getElementById('ep-addr').value.trim();
-  const newRooms = document.getElementById('ep-rooms').value.trim();
-  const newM2    = document.getElementById('ep-m2').value.trim();
-  const newFloor = document.getElementById('ep-floor').value.trim();
-  const newPhoto = document.getElementById('ep-photo').value.trim();
+  // Read fields FIRST
+  const newUrl      = document.getElementById('ep-url').value.trim();
+  const newPrice    = document.getElementById('ep-price').value.trim();
+  const newAddr     = document.getElementById('ep-addr').value.trim();
+  const newRooms    = document.getElementById('ep-rooms').value.trim();
+  const newM2       = document.getElementById('ep-m2').value.trim();
+  const newFloor    = document.getElementById('ep-floor').value.trim();
+  const newPhoto    = document.getElementById('ep-photo').value.trim();
   const newCovered  = document.getElementById('ep-covered').value.trim();
   const newSemicov  = document.getElementById('ep-semicov').value.trim();
   const newOpen     = document.getElementById('ep-open').value.trim();
   const newAvgPrice = document.getElementById('ep-avg-price').value.trim();
 
-  // Use stored editingPropId or try to get it from modal
-  const pid = editingPropId || document.getElementById('edit-prop-modal').dataset.pid;
-  if(!pid) { console.error('No editingPropId'); return; }
+  // Get ID from multiple sources
+  const pid = editingPropId
+    || document.getElementById('edit-prop-modal').dataset.pid
+    || document.getElementById('edit-prop-modal').getAttribute('data-pid');
+
+  console.log('saveEditProp: pid=', pid, 'covered=', newCovered, 'avg_price=', newAvgPrice);
+
+  if(!pid) { console.error('saveEditProp: no pid!'); return; }
+
   const c = state.clients.find(x=>x.id===state.currentClient);
   const p = c && c.props.find(x=>x.id===pid);
-  if(!p) return;
-  // Ensure editingPropId is set
-  editingPropId = pid;
+  if(!p) { console.error('saveEditProp: prop not found!', pid); return; }
 
   showSpinner(true);
-  await api('updateProperty', {
+  const result = await api('updateProperty', {
     id: pid,
     url: newUrl, price: newPrice, address: newAddr,
     rooms: newRooms, sqm: newM2, floor_info: newFloor,
@@ -2322,6 +2326,7 @@ async function saveEditProp() {
     open_area: newOpen, avg_price: newAvgPrice
   });
   showSpinner(false);
+  console.log('updateProperty result:', result);
 
   // Update local state
   p.url = newUrl; p.price = newPrice; p.addr = newAddr;
