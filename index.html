@@ -917,10 +917,10 @@ let lang = 'es';
 let state = { clients: [], currentClient: null, filter: 'all' };
 let visits = [];
 
-/* ---- API via JSONP ---- */
-function api(action, data={}) {
+/* ---- API via JSONP with retry ---- */
+function apiOnce(action, data={}) {
   return new Promise((resolve) => {
-    const cbName = 'cb_' + Date.now();
+    const cbName = 'cb_' + Date.now() + '_' + Math.random().toString(36).slice(2,6);
     const flat = {};
     for(const [k,v] of Object.entries(data)) flat[k] = (v===null||v===undefined)?'':String(v);
     const params = new URLSearchParams({ action, callback: cbName, ...flat });
@@ -928,20 +928,33 @@ function api(action, data={}) {
     const script = document.createElement('script');
     const timeout = setTimeout(() => {
       cleanup();
-      console.error('API timeout for action:', action);
       resolve({ error: 'timeout' });
-    }, 20000);
+    }, 30000);
     function cleanup() {
       clearTimeout(timeout);
       try { delete window[cbName]; } catch(e){}
       if(script.parentNode) script.parentNode.removeChild(script);
     }
     window[cbName] = function(result) { cleanup(); resolve(result); };
-    script.onerror = function() { cleanup(); console.error('Script load error for:', action); resolve({ error: 'load error' }); };
+    script.onerror = function() { cleanup(); resolve({ error: 'load error' }); };
     script.src = url;
     document.head.appendChild(script);
-    console.log('API call:', action, flat);
   });
+}
+
+async function api(action, data={}, retries=2) {
+  console.log('API call:', action, data);
+  for(let i = 0; i <= retries; i++) {
+    const result = await apiOnce(action, data);
+    if(!result.error) return result;
+    if(i < retries) {
+      console.log('API retry', i+1, 'for:', action, '- error:', result.error);
+      await new Promise(r => setTimeout(r, 1000)); // wait 1s before retry
+    } else {
+      console.error('API failed after', retries+1, 'attempts:', action, result.error);
+      return result;
+    }
+  }
 }
 
 function showSpinner(show) {
