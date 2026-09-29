@@ -1045,13 +1045,13 @@ function m2StatsHtml(p) {
   if(!s.pricePerM2 && !s.avgBarrio) return '';
   let html = '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px">';
   if(s.pricePerM2) {
-    html += '<span style="font-size:11px;padding:3px 8px;border-radius:20px;background:var(--surface2);color:var(--text2);border:1px solid var(--border)">USD '+s.pricePerM2.toLocaleString()+'/m² pond.</span>';
-  }
-  if(s.avgBarrio) {
-    const diff = s.pricePerM2 ? s.pricePerM2 - s.avgBarrio : null;
+    const diff = s.avgBarrio ? s.pricePerM2 - s.avgBarrio : null;
     const color = diff === null ? 'var(--text2)' : diff > 0 ? '#B83232' : '#2E7D32';
     const arrow = diff === null ? '' : diff > 0 ? ' ↑' : ' ↓';
-    html += '<span style="font-size:11px;padding:3px 8px;border-radius:20px;background:var(--surface2);color:'+color+';border:1px solid var(--border)">Barrio m² (USD) '+s.avgBarrio.toLocaleString()+arrow+'</span>';
+    html += '<span style="font-size:11px;padding:3px 8px;border-radius:20px;background:var(--surface2);color:'+color+';border:1px solid var(--border)">USD '+s.pricePerM2.toLocaleString()+'/m² pond.'+arrow+'</span>';
+  }
+  if(s.avgBarrio) {
+    html += '<span style="font-size:11px;padding:3px 8px;border-radius:20px;background:var(--surface2);color:var(--text2);border:1px solid var(--border)">Barrio m² (USD) '+s.avgBarrio.toLocaleString()+'</span>';
   }
   html += '</div>';
   return html;
