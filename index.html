@@ -1876,6 +1876,7 @@ async function createClient() {
 async function addProperty() {
   const url=document.getElementById('new-url').value.trim(); if(!url) return;
   const c=state.clients.find(x=>x.id===state.currentClient);
+  const photoUrl = document.getElementById('new-photo').value.trim();
   const propData = {
     client_id: state.currentClient, url,
     price: document.getElementById('new-price').value.trim()||'—',
@@ -1886,32 +1887,25 @@ async function addProperty() {
     covered: document.getElementById('new-covered').value.trim(),
     semicov: document.getElementById('new-semicov').value.trim(),
     open_area: document.getElementById('new-open').value.trim(),
-    avg_price: document.getElementById('new-avg-price').value.trim()
+    avg_price: document.getElementById('new-avg-price').value.trim(),
+    image_url: photoUrl
   };
   showSpinner(true);
   const data = await api('addProperty', propData);
   showSpinner(false);
-  console.log('addProperty response:', data);
   if(data.id) {
-    const photoUrl = document.getElementById('new-photo').value.trim();
     const newProp = {id:data.id,url,price:propData.price,addr:propData.address,rooms:propData.rooms,m2:propData.sqm,floor:propData.floor_info,liked:false,comment:'',agent_comment:'',client_comment:'',image_url:photoUrl,rejected:false,covered:propData.covered||'',semicov:propData.semicov||'',open_area:propData.open_area||'',avg_price:propData.avg_price||''};
     c.props.push(newProp);
     if(photoUrl) imageCache[data.id] = photoUrl;
     ['new-url','new-price','new-addr','new-rooms','new-m2','new-floor','new-photo','new-covered','new-semicov','new-open','new-avg-price'].forEach(id=>{document.getElementById(id).value='';});
     renderClientSections(c.props,'detail-props-grid',true); syncClientView(c);
     c.prop_count = c.props.length;
-    // Save photo URL if provided manually, otherwise try auto-fetch
-    if(photoUrl) {
-      api('updateProperty', { id: data.id, image_url: photoUrl });
-    } else {
+    // Try auto-fetch image in background if no manual photo
+    if(!photoUrl) {
       fetchOgImage(url, data.id).then(imgUrl => {
         if(imgUrl) {
           imageCache[data.id] = imgUrl;
           api('updateProperty', { id: data.id, image_url: imgUrl });
-          const el = document.getElementById('thumb-img-' + data.id);
-          if(el) { el.src = imgUrl; el.style.display='block'; }
-          const ld = document.getElementById('thumb-load-' + data.id);
-          if(ld) ld.style.display='none';
         }
       });
     }
