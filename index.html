@@ -2454,5 +2454,20 @@ if(new URLSearchParams(window.location.search).get('client')) {
   setTimeout(hideLoadingScreen, 6000);
 }
 </script>
+
+<script>
+// Move all modals to body to ensure they work regardless of parent visibility
+document.addEventListener('DOMContentLoaded', function() {
+  const modalIds = ['edit-prop-modal','edit-client-modal','schedule-visit-modal',
+                    'copy-prop-modal','edit-visit-modal','new-client-modal'];
+  modalIds.forEach(function(id) {
+    const el = document.getElementById(id);
+    if(el && el.parentElement !== document.body) {
+      document.body.appendChild(el);
+      console.log('Moved modal to body:', id);
+    }
+  });
+});
+</script>
 </body>
 </html>
