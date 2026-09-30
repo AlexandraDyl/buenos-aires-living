@@ -2403,6 +2403,11 @@ const urlParams = new URLSearchParams(window.location.search);
 const clientParam = urlParams.get('client');
 
 async function init() {
+  // Move all modals to body to ensure they work regardless of parent visibility
+  ['edit-prop-modal','edit-client-modal','schedule-visit-modal','copy-prop-modal','edit-visit-modal','new-client-modal'].forEach(function(id){
+    const el = document.getElementById(id);
+    if(el && el.parentElement !== document.body) document.body.appendChild(el);
+  });
   // Apply language now that DOM is ready
   setLang(localStorage.getItem('lang') || 'es');
 
