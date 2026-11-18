@@ -697,12 +697,26 @@
         <div class="form-field"><label>Descub. m²</label><input type="number" id="ep-open"></div>
         <div class="form-field"><label>Precio m² barrio</label><input type="number" id="ep-avg-price"></div>
       </div>
+      <div class="form-field full">
+        <label>📐 Plano (subir imagen)</label>
+        <input type="file" id="ep-plan-file" accept="image/*" onchange="onPlanFileChosen(this)" style="font-size:13px">
+        <div id="ep-plan-preview" style="margin-top:8px;display:none;align-items:center;gap:10px">
+          <img id="ep-plan-img" src="" alt="" style="max-height:90px;max-width:140px;border-radius:6px;border:1px solid var(--border);object-fit:contain;background:#fff">
+          <button type="button" class="btn btn-sm btn-danger-ghost" onclick="removePlanInModal()">Quitar plano</button>
+        </div>
+      </div>
     </div>
     <div class="modal-footer">
       <button class="btn" onclick="closeEditProp()">Cancelar</button>
       <button class="btn btn-primary" onclick="saveEditProp()">Guardar cambios</button>
     </div>
   </div>
+</div>
+
+<!-- PLAN LIGHTBOX -->
+<div id="plan-lightbox" onclick="closePlan()" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:10000;align-items:center;justify-content:center;padding:16px;box-sizing:border-box;cursor:zoom-out">
+  <img id="plan-lightbox-img" src="" alt="Plano" style="max-width:100%;max-height:100%;object-fit:contain;background:#fff;border-radius:6px">
+  <div style="position:absolute;top:14px;right:18px;color:#fff;font-size:30px;line-height:1">✕</div>
 </div>
 
 <!-- COPY PROPERTY MODAL -->
@@ -762,6 +776,7 @@ const LANGS = {
     addVisit:'Agregar visita', vCancel:'Cancelar', vSave:'Guardar',
     fAddrPh:'Dirección (ej: Av. Libertador 1500)', fPhotoPh:'URL de foto (click derecho → copiar dirección de imagen)', fClientPh:'Cliente', fUrlPh:'Enlace propiedad (opcional)',
     noVisits:'Sin visitas este día',
+    planBtn:'📐 Plano',
     infoPaymentsTitle:'Pagos adicionales al comprar',
     infoAgencyFee:'Comisión de la agencia',
     infoAgencyFeeDesc:'IVA — 21% sobre el 4% lo paga el comprador.',
@@ -807,6 +822,7 @@ const LANGS = {
     addVisit:'Add visit', vCancel:'Cancel', vSave:'Save',
     fAddrPh:'Address (e.g. Av. Libertador 1500)', fPhotoPh:'Photo URL (right click image → copy image address)', fClientPh:'Client', fUrlPh:'Property link (optional)',
     noVisits:'No visits on this day',
+    planBtn:'📐 Floor plan',
     infoPaymentsTitle:'Additional costs when buying',
     infoAgencyFee:'Agency commission',
     infoAgencyFeeDesc:'VAT — 21% on the 4% is paid by the buyer.',
@@ -852,6 +868,7 @@ const LANGS = {
     addVisit:'Добавить визит', vCancel:'Отмена', vSave:'Сохранить',
     fAddrPh:'Адрес (напр. Av. Libertador 1500)', fPhotoPh:'URL фото (правая кнопка → копировать адрес изображения)', fClientPh:'Клиент', fUrlPh:'Ссылка на объект (опц.)',
     noVisits:'Визитов в этот день нет',
+    planBtn:'📐 Планировка',
     infoPaymentsTitle:'Дополнительные платежи при покупке',
     infoAgencyFee:'Комиссия агентства',
     infoAgencyFeeDesc:'НДС — 21% от 4% платит покупатель.',
@@ -975,7 +992,8 @@ async function loadProperties(clientId) {
         covered: p.covered||'',
         semicov: p.semicov||'',
         open_area: p.open_area||'',
-        avg_price: p.avg_price||''
+        avg_price: p.avg_price||'',
+        plan_url: p.plan_url||''
       }));
       c.props.forEach(p => { if(p.image_url) imageCache[p.id] = p.image_url; });
     }
@@ -1499,6 +1517,7 @@ function propCardHtml(p, isAgent, clientName) {
   const urlLink = p.url ? '<a class="visit-link" href="'+p.url+'" target="_blank">Ver propiedad</a>' : '';
   
   let actionsHtml = '<a href="'+p.url+'" target="_blank" class="btn btn-sm">'+t('viewPortal')+'</a>';
+  if(p.plan_url) actionsHtml += '<button class="btn btn-sm" onclick="openPlan(\''+p.id+'\')">'+t('planBtn')+'</button>';
   
   if(isAgent) {
     if(p.liked) {
@@ -2043,8 +2062,11 @@ async function confirmCopyProp() {
 
   if(data.id) {
     // Save image_url if present
-    if(p.image_url) {
-      api('updateProperty', { id: data.id, image_url: p.image_url });
+    if(p.image_url || p.plan_url) {
+      const _extra = { id: data.id };
+      if(p.image_url) _extra.image_url = p.image_url;
+      if(p.plan_url && p.plan_url.indexOf('data:') !== 0) _extra.plan_url = p.plan_url;
+      api('updateProperty', _extra);
     }
     // Add to target client's props in memory
     const targetClient = state.clients.find(x=>x.id===targetClientId);
@@ -2053,7 +2075,7 @@ async function confirmCopyProp() {
         id: data.id, url: p.url, price: p.price, addr: p.addr,
         rooms: p.rooms, m2: p.m2, floor: p.floor,
         liked: false, comment: '', agent_comment: '', client_comment: '',
-        image_url: p.image_url || '', rejected: false
+        image_url: p.image_url || '', rejected: false, plan_url: (p.plan_url && p.plan_url.indexOf('data:')!==0) ? p.plan_url : ''
       });
     }
     closeCopyProp();
@@ -2233,6 +2255,96 @@ document.getElementById('edit-client-modal').addEventListener('click', function(
 
 /* ---- EDIT PROPERTY ---- */
 let editingPropId = null;
+let pendingPlan = null;   // {data (base64), mime, dataUrl}
+let planRemoved = false;
+
+function showPlanPreview(url) {
+  const box = document.getElementById('ep-plan-preview');
+  if(url) { document.getElementById('ep-plan-img').src = url; box.style.display = 'flex'; }
+  else { document.getElementById('ep-plan-img').src = ''; box.style.display = 'none'; }
+}
+
+function compressImage(file, maxSide, quality) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('read error'));
+    reader.onload = () => {
+      const img = new Image();
+      img.onerror = () => reject(new Error('image error'));
+      img.onload = () => {
+        let w = img.width, h = img.height;
+        const k = Math.min(1, maxSide / Math.max(w, h));
+        w = Math.round(w*k); h = Math.round(h*k);
+        const cv = document.createElement('canvas');
+        cv.width = w; cv.height = h;
+        const ctx = cv.getContext('2d');
+        ctx.fillStyle = '#fff'; ctx.fillRect(0,0,w,h);
+        ctx.drawImage(img, 0, 0, w, h);
+        const dataUrl = cv.toDataURL('image/jpeg', quality);
+        resolve({ dataUrl, data: dataUrl.split(',')[1], mime: 'image/jpeg' });
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+async function onPlanFileChosen(input) {
+  const f = input.files && input.files[0];
+  if(!f) return;
+  try {
+    pendingPlan = await compressImage(f, 1600, 0.8);
+    planRemoved = false;
+    showPlanPreview(pendingPlan.dataUrl);
+  } catch(e) {
+    console.error('plan compress error', e);
+    alert('No se pudo leer la imagen');
+  }
+}
+
+function removePlanInModal() {
+  pendingPlan = null; planRemoved = true;
+  document.getElementById('ep-plan-file').value = '';
+  showPlanPreview('');
+}
+
+function openPlan(pid) {
+  let p = null;
+  state.clients.forEach(c => { const x = (c.props||[]).find(y=>y.id===pid); if(x) p = x; });
+  if(!p || !p.plan_url) return;
+  document.getElementById('plan-lightbox-img').src = p.plan_url;
+  document.getElementById('plan-lightbox').style.display = 'flex';
+}
+function closePlan() {
+  document.getElementById('plan-lightbox').style.display = 'none';
+  document.getElementById('plan-lightbox-img').src = '';
+}
+
+async function uploadPlanFor(pid, clientId, plan) {
+  try {
+    await fetch(API_URL, {
+      method: 'POST', mode: 'no-cors',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ action: 'uploadPlan', id: pid, mime: plan.mime, data: plan.data })
+    });
+  } catch(e) { console.error('uploadPlan fetch error', e); }
+  // response is unreadable (no-cors): poll the sheet until the Drive URL appears
+  for(let i=0; i<8; i++) {
+    await new Promise(r => setTimeout(r, 3000));
+    const data = await api('getProperties', { clientId });
+    if(Array.isArray(data)) {
+      const row = data.find(x => String(x.id) === String(pid));
+      if(row && row.plan_url) {
+        const c = state.clients.find(x=>x.id===clientId);
+        const p = c && c.props.find(x=>x.id===pid);
+        if(p) { p.plan_url = row.plan_url; renderClientSections(c.props, 'detail-props-grid', true); }
+        return true;
+      }
+    }
+  }
+  console.warn('plan upload not confirmed');
+  return false;
+}
 
 function openEditProp(pid) {
   const c = state.clients.find(x=>x.id===state.currentClient);
@@ -2250,6 +2362,9 @@ function openEditProp(pid) {
   document.getElementById('ep-semicov').value = p.semicov || '';
   document.getElementById('ep-open').value = p.open_area || '';
   document.getElementById('ep-avg-price').value = p.avg_price || '';
+  pendingPlan = null; planRemoved = false;
+  document.getElementById('ep-plan-file').value = '';
+  showPlanPreview(p.plan_url || '');
   document.getElementById('edit-prop-modal').dataset.pid = pid;
   document.getElementById('edit-prop-modal').classList.add('open');
 }
@@ -2304,9 +2419,19 @@ async function saveEditProp() {
   p.semicov = newSemicov; p.open_area = newOpen; p.avg_price = newAvgPrice;
   if(newPhoto) imageCache[pid] = newPhoto;
 
+  const _plan = pendingPlan, _removed = planRemoved;
+  if(_removed && !_plan) {
+    p.plan_url = '';
+    api('updateProperty', { id: pid, plan_url: '' });
+  } else if(_plan) {
+    p.plan_url = _plan.dataUrl; // show immediately; replaced by the Drive link once uploaded
+  }
+
   closeEditProp();
   renderClientSections(c.props, 'detail-props-grid', true);
   syncClientView(c);
+
+  if(_plan) uploadPlanFor(pid, c.id, _plan);
 }
 
 document.getElementById('edit-prop-modal').addEventListener('click', function(e){ if(e.target===this) closeEditProp(); });
@@ -2404,7 +2529,7 @@ const clientParam = urlParams.get('client');
 
 async function init() {
   // Move all modals to body to ensure they work regardless of parent visibility
-  ['edit-prop-modal','edit-client-modal','schedule-visit-modal','copy-prop-modal','edit-visit-modal','new-client-modal'].forEach(function(id){
+  ['edit-prop-modal','edit-client-modal','schedule-visit-modal','copy-prop-modal','edit-visit-modal','new-client-modal','plan-lightbox'].forEach(function(id){
     const el = document.getElementById(id);
     if(el && el.parentElement !== document.body) document.body.appendChild(el);
   });
@@ -2464,7 +2589,7 @@ if(new URLSearchParams(window.location.search).get('client')) {
 // Move all modals to body to ensure they work regardless of parent visibility
 document.addEventListener('DOMContentLoaded', function() {
   const modalIds = ['edit-prop-modal','edit-client-modal','schedule-visit-modal',
-                    'copy-prop-modal','edit-visit-modal','new-client-modal'];
+                    'copy-prop-modal','edit-visit-modal','new-client-modal','plan-lightbox'];
   modalIds.forEach(function(id) {
     const el = document.getElementById(id);
     if(el && el.parentElement !== document.body) {
