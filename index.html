@@ -1,2650 +1,360 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-<meta charset="UTF-8">
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-<style>.leaflet-control-attribution,.leaflet-control-attribution a,.leaflet-bottom.leaflet-right { display:none!important;visibility:hidden!important;opacity:0!important; }</style>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Buenos Aires Living</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
-<style>
-  :root {
-    --bg: #F5F4F0;
-    --surface: #FFFFFF;
-    --surface2: #EDECEA;
-    --border: #DDDBD6;
-    --text: #16181F;
-    --text2: #5A5D6B;
-    --text3: #9799A6;
-    --accent: #1B3A5C;
-    --accent-light: #E6EDF4;
-    --accent-text: #0F2238;
-    --danger: #B83232;
-    --danger-light: #FDECEA;
-    --radius: 12px;
-    --radius-sm: 8px;
-    --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04);
-    --shadow-md: 0 4px 20px rgba(0,0,0,0.1);
-  }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; font-size: 15px; line-height: 1.5; }
+// ================================================
+//  Buenos Aires Living — Google Apps Script
+//  Paste ALL of this in Apps Script editor
+// ================================================
 
-  /* NAV */
-  .topnav { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 2rem; display: flex; align-items: center; justify-content: space-between; height: 60px; position: sticky; top: 0; z-index: 50; }
-  .logo { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; text-decoration: none; }
-  .logo-brand { font-family: 'DM Serif Display', serif; font-size: 17px; font-style: normal; color: var(--accent); letter-spacing: -0.2px; line-height: 1.1; }
-  .logo-divider { display: none; }
-  .logo-sub { font-family: 'DM Serif Display', serif; font-size: 12px; font-style: italic; color: var(--text3); letter-spacing: -0.1px; line-height: 1; }
-  .nav-right { display: flex; align-items: center; gap: 12px; }
-  .tab-toggle { display: flex; background: var(--surface2); border-radius: 8px; padding: 3px; gap: 2px; }
-  .tab-btn { padding: 6px 16px; border: none; background: transparent; border-radius: 6px; font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500; color: var(--text2); cursor: pointer; transition: all 0.18s; white-space: nowrap; }
-  .tab-btn.active { background: var(--surface); color: var(--text); box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
-  .lang-group { display: flex; gap: 3px; }
-  .lang-btn { padding: 5px 9px; border: 1px solid var(--border); background: transparent; border-radius: 6px; font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 600; color: var(--text3); cursor: pointer; transition: all 0.15s; letter-spacing: 0.5px; }
-  .lang-btn:hover { color: var(--text); border-color: var(--text3); }
-  .lang-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+const SHEET_ID = '12x_H7DVYrHeARWnCwEFm3PnXSeiNKOhBLkGeFTqUFaU';
 
-  /* LAYOUT */
-  .view { display: none; }
-  .view.active { display: block; }
-  .container { max-width: 1080px; margin: 0 auto; padding: 2rem; }
-
-  /* COMMON */
-  .page-header { display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 1.75rem; }
-  .page-title { font-family: 'DM Serif Display', serif; font-size: 28px; color: var(--text); line-height: 1.2; }
-  .page-title small { display: block; font-family: 'DM Sans', sans-serif; font-size: 13px; color: var(--text3); font-weight: 400; margin-top: 2px; }
-  .btn { display: inline-flex; align-items: center; gap: 7px; padding: 9px 18px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--surface); color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.15s; text-decoration: none; white-space: nowrap; }
-  .btn:hover { background: var(--surface2); border-color: var(--text3); }
-  .btn svg { width: 15px; height: 15px; flex-shrink: 0; }
-  .btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
-  .btn-primary:hover { background: var(--accent-text); border-color: var(--accent-text); }
-  .btn-sm { padding: 6px 12px; font-size: 13px; }
-  .btn-ghost { background: transparent; border-color: transparent; color: var(--text2); padding: 6px 10px; }
-  .btn-ghost:hover { background: var(--surface2); border-color: var(--border); color: var(--text); }
-  .btn-danger-ghost { background: transparent; border-color: transparent; color: var(--text3); padding: 6px 10px; }
-  .btn-danger-ghost:hover { background: var(--danger-light); color: var(--danger); border-color: transparent; }
-  .empty { text-align: center; padding: 4rem 2rem; color: var(--text3); grid-column: 1 / -1; }
-  .empty svg { width: 48px; height: 48px; margin-bottom: 12px; opacity: 0.4; }
-  .empty p { font-size: 15px; }
-  .back-link { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text2); cursor: pointer; margin-bottom: 1.25rem; transition: color 0.15s; }
-  .back-link:hover { color: var(--text); }
-  .back-link svg { width: 14px; height: 14px; }
-
-  /* CLIENTS */
-  .clients-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
-  .client-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; cursor: pointer; transition: all 0.2s; box-shadow: var(--shadow); }
-  .client-card:hover { border-color: var(--accent); box-shadow: var(--shadow-md); transform: translateY(-1px); }
-  .client-top { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
-  .avatar { width: 42px; height: 42px; border-radius: 50%; background: var(--accent-light); color: var(--accent-text); display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 600; flex-shrink: 0; }
-  .client-name { font-size: 15px; font-weight: 600; color: var(--text); }
-  .client-budget { font-size: 13px; color: var(--text2); margin-top: 1px; }
-  .client-footer { display: flex; align-items: center; gap: 10px; padding-top: 10px; border-top: 1px solid var(--border); flex-wrap: wrap; }
-  .stat-chip { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; color: var(--text2); background: var(--surface2); padding: 3px 9px; border-radius: 20px; }
-  .stat-chip svg { width: 12px; height: 12px; }
-  .stat-chip.liked { color: var(--danger); background: var(--danger-light); }
-
-  /* DETAIL */
-  .detail-hero { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.5rem; margin-bottom: 1.5rem; display: flex; align-items: flex-start; gap: 1.25rem; box-shadow: var(--shadow); }
-  .avatar-lg { width: 56px; height: 56px; border-radius: 50%; background: var(--accent-light); color: var(--accent-text); display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 600; flex-shrink: 0; }
-  .detail-info { flex: 1; }
-  .detail-name { font-size: 18px; font-weight: 600; margin-bottom: 3px; }
-  .detail-budget { font-size: 13px; color: var(--text2); margin-bottom: 10px; }
-  .link-row { display: flex; align-items: center; gap: 8px; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 6px 10px; width: fit-content; max-width: 100%; }
-  .link-text { font-size: 12px; color: var(--text2); font-family: monospace; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 320px; }
-
-  /* ADD PROPERTY */
-  .add-section { background: var(--surface); border: 1.5px dashed var(--border); border-radius: var(--radius); padding: 1.25rem; margin-bottom: 1.5rem; }
-  .add-section-title { font-size: 13px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
-  .add-section-title svg { width: 14px; height: 14px; }
-  .input-row { display: flex; gap: 8px; flex-wrap: wrap; }
-  input[type="text"], input[type="date"], input[type="time"], textarea, select { padding: 9px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 14px; transition: border-color 0.15s; outline: none; }
-  input[type="text"]:focus, input[type="date"]:focus, input[type="time"]:focus, textarea:focus, select:focus { border-color: var(--accent); background: var(--surface); }
-  .input-url { flex: 1; min-width: 200px; }
-  .input-price { width: 130px; }
-  .input-addr { width: 180px; }
-  .input-rooms { width: 80px; }
-  .input-m2 { width: 80px; }
-  .input-floor { flex: 1; min-width: 140px; }
-
-  /* PROPS */
-  .props-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
-  .prop-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); transition: all 0.2s; display: flex; flex-direction: column; }
-  .prop-card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
-  .prop-thumb { height: 170px; background: linear-gradient(135deg, var(--surface2) 0%, var(--bg) 100%); display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; }
-  .prop-thumb img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-  .prop-thumb-loading { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
-  .prop-thumb-loading::after { content:''; width:20px; height:20px; border:2px solid var(--border); border-top-color:var(--accent); border-radius:50%; animation:spin .7s linear infinite; }
-  .prop-thumb-icon { opacity: 0.18; }
-  .prop-thumb-icon svg { width: 64px; height: 64px; }
-  .prop-source-badge { position: absolute; bottom: 10px; left: 10px; font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 20px; letter-spacing: 0.3px; }
-  .badge-zonaprop { background: #E8F4FD; color: #0066CC; }
-  .badge-ml { background: #FFF9E6; color: #B8860B; }
-  .fav-btn { position: absolute; top: 10px; right: 10px; width: 34px; height: 34px; border-radius: 50%; background: var(--surface); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.15s; }
-  .fav-btn:hover { border-color: var(--danger); }
-  .fav-btn svg { width: 16px; height: 16px; stroke: var(--text3); fill: none; transition: all 0.15s; }
-  .fav-btn.liked svg { stroke: var(--danger); fill: var(--danger); }
-  .prop-body { padding: 1rem 1.1rem; flex: 1; display: flex; flex-direction: column; gap: 8px; }
-  .prop-price { font-family: 'DM Serif Display', serif; font-size: 22px; color: var(--text); }
-  .prop-addr { font-size: 13px; color: var(--text2); display: flex; align-items: center; gap: 5px; }
-  .prop-addr svg { width: 13px; height: 13px; flex-shrink: 0; }
-  .chips { display: flex; gap: 6px; flex-wrap: wrap; }
-  .chip { font-size: 12px; padding: 3px 10px; border-radius: 20px; background: var(--surface2); color: var(--text2); border: 1px solid var(--border); display: flex; align-items: center; gap: 4px; }
-  .chip svg { width: 11px; height: 11px; }
-  .prop-actions { display: flex; gap: 6px; align-items: center; margin-top: 4px; }
-  .prop-comment { width: 100%; resize: none; min-height: 68px; font-size: 13px; padding: 8px 10px; border-radius: var(--radius-sm); background: var(--bg); border: 1px solid var(--border); color: var(--text); font-family: 'DM Sans', sans-serif; transition: border-color 0.15s; margin-top: 4px; }
-  .prop-comment:focus { border-color: var(--accent); background: var(--surface); outline: none; }
-  .saved-msg { font-size: 12px; color: var(--accent); display: none; align-items: center; gap: 4px; margin-top: 3px; }
-  .saved-msg svg { width: 13px; height: 13px; }
-
-  /* CLIENT VIEW */
-  .filter-bar { display: flex; gap: 8px; margin-bottom: 1.5rem; flex-wrap: wrap; align-items: center; justify-content: space-between; }
-  .prop-section-title { font-family: 'DM Serif Display', serif; font-size: 18px; color: var(--text); margin: 1.5rem 0 1rem; display: flex; align-items: center; gap: 8px; }
-  .prop-section-title span { font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 600; color: var(--text3); background: var(--surface2); padding: 2px 8px; border-radius: 20px; }
-  .visit-badge { position: absolute; bottom: 10px; right: 10px; font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 20px; letter-spacing: 0.3px; display: flex; align-items: center; gap: 4px; }
-  .visit-badge.scheduled { background: #E8F4FD; color: #0066CC; }
-  .visit-badge.visited { background: #E6F4EA; color: #2E7D32; }
-  .btn-reject { position: absolute; top: 10px; left: 10px; width: 34px; height: 34px; border-radius: 50%; background: white; border: 1px solid #DDDBD6; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.15s; font-size: 15px; font-weight: 700; color: #9799A6; line-height: 1; z-index: 2; opacity: 1 !important; visibility: visible !important; }
-  .btn-reject:hover { background: #FDECEA; color: #B83232; border-color: #B83232; }
-  .btn-reject.rejected { background: #FDECEA; color: #B83232; border-color: #B83232; }
-  .filter-pills { display: flex; gap: 6px; }
-  .pill { padding: 6px 16px; border-radius: 20px; font-size: 13px; font-weight: 500; border: 1px solid var(--border); background: var(--surface); color: var(--text2); cursor: pointer; transition: all 0.15s; display: inline-flex; align-items: center; gap: 5px; }
-  .pill:hover { border-color: var(--text3); color: var(--text); }
-  .pill.active { background: var(--accent); color: #fff; border-color: var(--accent); }
-  .pill svg { width: 13px; height: 13px; }
-  .client-hero { background: var(--accent); border-radius: var(--radius); padding: 2rem 2.5rem; margin-bottom: 1.75rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
-  .client-hero-left h1 { font-family: 'DM Serif Display', serif; font-size: 26px; color: #fff; line-height: 1.2; margin-bottom: 6px; }
-  .client-hero-left p { font-size: 14px; color: rgba(255,255,255,0.7); }
-  .client-hero-badge { background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.25); border-radius: var(--radius-sm); padding: 10px 18px; text-align: center; flex-shrink: 0; }
-  .client-hero-badge .num { font-family: 'DM Serif Display', serif; font-size: 28px; color: #fff; line-height: 1; }
-  .client-hero-badge .lbl { font-size: 12px; color: rgba(255,255,255,0.7); margin-top: 3px; }
-  .autosave-note { display: flex; align-items: center; gap: 8px; background: var(--accent-light); border: 1px solid #B8CCE0; border-radius: var(--radius-sm); padding: 8px 14px; font-size: 13px; color: var(--accent-text); margin-bottom: 1.25rem; }
-  .autosave-note svg { width: 15px; height: 15px; flex-shrink: 0; }
-
-  /* EDIT PROP MODAL */
-  .edit-modal { width: 520px; }
-  .edit-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-  .edit-grid .full { grid-column: 1 / -1; }
-  .edit-grid input { width: 100%; }
-
-  /* MODAL */
-  .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; width: 100%; height: 100%; background: rgba(22,24,31,0.5); z-index: 9999; align-items: center; justify-content: center; backdrop-filter: blur(3px); }
-  .modal-overlay.open { display: flex; }
-  .modal { background: var(--surface); border-radius: var(--radius); padding: 2rem; width: 460px; max-width: 95vw; max-height: 90vh; max-height: 90dvh; overflow-y: auto; -webkit-overflow-scrolling: touch; box-shadow: var(--shadow-md); border: 1px solid var(--border); }
-  .modal-title { font-family: 'DM Serif Display', serif; font-size: 22px; margin-bottom: 1.25rem; }
-  .form-field { margin-bottom: 1rem; }
-  .form-field label { display: block; font-size: 12px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px; }
-  .form-field input, .form-field select { width: 100%; }
-  .modal-footer { display: flex; gap: 8px; justify-content: flex-end; margin-top: 1.25rem; position: sticky; bottom: -2rem; background: var(--surface); padding: 12px 0 2px; }
-
-  /* ---- VISITS ---- */
-  .visits-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-  .v-panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); }
-  .v-panel-head { padding: 14px 18px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
-  .v-panel-title { font-size: 14px; font-weight: 600; color: var(--text); display: flex; align-items: center; gap: 8px; }
-  .v-panel-title svg { width: 16px; height: 16px; color: var(--text2); }
-  .v-panel-body { padding: 16px 18px; }
-  .cal-nav { display: flex; align-items: center; gap: 6px; }
-  .cal-nav button { background: none; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 4px 8px; cursor: pointer; color: var(--text2); display: flex; align-items: center; transition: background 0.12s; }
-  .cal-nav button:hover { background: var(--surface2); }
-  .cal-nav button svg { width: 14px; height: 14px; }
-  .cal-month-lbl { font-size: 13px; font-weight: 600; color: var(--text); min-width: 110px; text-align: center; }
-  .cal-grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 2px; margin-top: 4px; }
-  .cal-dow { font-size: 11px; color: var(--text3); text-align: center; padding: 4px 0; font-weight: 600; }
-  .cal-day { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; border-radius: var(--radius-sm); font-size: 12px; color: var(--text2); cursor: pointer; position: relative; transition: background 0.12s; }
-  .cal-day:hover { background: var(--surface2); }
-  .cal-day.other { color: var(--text3); }
-  .cal-day.today { font-weight: 600; color: var(--text); }
-  .cal-day.has-visit::after { content:''; position: absolute; bottom: 3px; left: 50%; transform: translateX(-50%); width: 4px; height: 4px; border-radius: 50%; background: var(--accent); }
-  .cal-day.selected { background: var(--accent); color: #fff; font-weight: 600; }
-  .cal-day.selected::after { background: rgba(255,255,255,0.7); }
-  .visit-list { margin-top: 14px; display: flex; flex-direction: column; gap: 8px; }
-  .visit-item { padding: 10px 12px; border-radius: var(--radius-sm); border: 1px solid var(--border); cursor: pointer; transition: border-color 0.12s; display: flex; align-items: flex-start; gap: 10px; background: var(--surface); }
-  .visit-item:hover { border-color: var(--accent); }
-  .visit-item.active { border-color: var(--accent); background: var(--accent-light); }
-  .visit-num { width: 22px; height: 22px; border-radius: 50%; background: var(--accent); color: #fff; font-size: 11px; font-weight: 600; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; }
-  .visit-info { flex: 1; min-width: 0; }
-  .visit-time { font-size: 11px; color: var(--text2); margin-bottom: 2px; display: flex; align-items: center; gap: 4px; }
-  .visit-time svg { width: 11px; height: 11px; }
-  .visit-addr { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .visit-client { font-size: 11px; color: var(--text2); }
-  .visit-link { font-size: 11px; color: var(--accent); text-decoration: none; display: inline-flex; align-items: center; gap: 3px; margin-top: 3px; }
-  .visit-link:hover { text-decoration: underline; }
-  .visit-link svg { width: 10px; height: 10px; }
-  .map-wrap { width: 100%; height: 290px; background: var(--surface2); border-radius: var(--radius-sm); overflow: hidden; margin-bottom: 12px; border: 1px solid var(--border); position: relative; }
-  .map-wrap svg { width: 100%; height: 100%; }
-  .gmap { width: 100%; height: 100%; }
-  .route-chips { display: flex; gap: 8px; flex-wrap: wrap; }
-  .route-chip { font-size: 12px; padding: 4px 10px; border-radius: 20px; background: var(--surface2); color: var(--text2); border: 1px solid var(--border); display: flex; align-items: center; gap: 5px; }
-  .route-chip svg { width: 13px; height: 13px; }
-  .add-visit-btn { width: 100%; padding: 9px; border-radius: var(--radius-sm); border: 1.5px dashed var(--border); background: transparent; color: var(--text2); font-size: 13px; font-family: 'DM Sans',sans-serif; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 12px; transition: all 0.12s; }
-  .add-visit-btn:hover { background: var(--surface2); color: var(--text); border-color: var(--text3); }
-  .add-visit-btn svg { width: 14px; height: 14px; }
-  .add-visit-form { background: var(--surface2); border-radius: var(--radius-sm); padding: 14px; margin-top: 10px; display: none; flex-direction: column; gap: 8px; border: 1px solid var(--border); }
-  .add-visit-form.open { display: flex; }
-  .form-row { display: flex; gap: 8px; }
-  .form-row input, .form-row select { flex: 1; }
-  .form-actions { display: flex; gap: 8px; justify-content: flex-end; }
-  .form-actions button { padding: 7px 16px; border-radius: var(--radius-sm); font-family: 'DM Sans',sans-serif; font-size: 13px; cursor: pointer; border: 1px solid var(--border); background: var(--surface); color: var(--text); transition: all 0.12s; }
-  .form-actions .save-btn { background: var(--accent); color: #fff; border-color: var(--accent); }
-  .form-actions .save-btn:hover { background: var(--accent-text); }
-  .empty-day { text-align: center; padding: 20px; color: var(--text3); font-size: 13px; }
-  .empty-day svg { width: 32px; height: 32px; margin-bottom: 8px; opacity: 0.4; display: block; margin-left: auto; margin-right: auto; }
-
-  @media (max-width: 900px) {
-    .visits-grid { grid-template-columns: 1fr; }
-    .props-grid { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
-  }
-
-  @media (max-width: 640px) {
-    /* Nav */
-    .topnav { padding: 0 0.75rem; gap: 6px; height: auto; min-height: 56px; flex-wrap: wrap; padding-top: 8px; padding-bottom: 8px; }
-    .logo-brand { font-size: 15px; }
-    .logo-sub { font-size: 11px; }
-    .nav-right { gap: 6px; width: 100%; justify-content: space-between; }
-    .tab-toggle { flex: 1; }
-    .tab-btn { padding: 5px 8px; font-size: 11px; flex: 1; text-align: center; }
-    .lang-group { gap: 2px; }
-    .lang-btn { padding: 4px 7px; font-size: 11px; }
-
-    /* Layout */
-    .container { padding: 0.75rem; }
-
-    /* Client hero */
-    .client-hero { flex-direction: column; padding: 1.25rem; gap: 0.75rem; }
-    .client-hero-left h1 { font-size: 20px; }
-    .client-hero-badge { width: 100%; display: flex; align-items: center; gap: 10px; padding: 8px 14px; }
-    .client-hero-badge .num { font-size: 22px; }
-
-    /* Detail hero */
-    .detail-hero { flex-direction: column; gap: 0.75rem; }
-    .avatar-lg { width: 44px; height: 44px; font-size: 15px; }
-    .link-row { flex-wrap: wrap; }
-    .link-text { max-width: 200px; }
-
-    /* Forms */
-    .input-row { flex-direction: column; }
-    .input-url, .input-price, .input-addr, .input-rooms, .input-m2, .input-floor { width: 100%; }
-    .add-section { padding: 1rem; }
-
-    /* Cards */
-    .clients-grid { grid-template-columns: 1fr; }
-    .props-grid { grid-template-columns: 1fr; }
-    .prop-thumb { height: 140px; }
-    .prop-price { font-size: 18px; }
-
-    /* Page header */
-    .page-header { flex-direction: column; align-items: flex-start; gap: 10px; }
-    .page-title { font-size: 22px; }
-
-    /* Visits */
-    .visits-grid { grid-template-columns: 1fr; }
-    .form-row { flex-direction: column; }
-    .map-wrap { height: 220px; }
-    .cal-day { font-size: 11px; }
-
-    /* Modal */
-    .modal { padding: 1.25rem; }
-    .modal-title { font-size: 18px; }
-    .edit-grid { grid-template-columns: 1fr; }
-
-    /* Filter bar */
-    #agent-filter-bar { gap: 6px; }
-    .pill { padding: 5px 12px; font-size: 12px; }
-  }
-
-  @media (max-width: 380px) {
-    .tab-btn { font-size: 10px; padding: 5px 5px; }
-    .lang-btn { padding: 3px 5px; font-size: 10px; }
-    .props-grid { grid-template-columns: 1fr; }
-  }
-</style>
-</head>
-<body>
-<script>
-(function() {
-  const clientId = new URLSearchParams(window.location.search).get('client');
-  if(clientId) {
-    const style = document.createElement('style');
-    style.id = 'client-mode-style';
-    style.textContent = [
-      '#view-agent,#view-visits,#tab-agent,#tab-visits,#tab-client{display:none!important}',
-      '#view-client{display:block!important;opacity:0;transition:opacity 0.3s}',
-      '.topnav .tab-toggle{display:none!important}',
-      '.lang-group{margin-left:auto}'
-    ].join('');
-    document.head ? document.head.appendChild(style) : document.addEventListener('DOMContentLoaded',()=>document.head.appendChild(style));
-  }
-})();
-</script>
-
-
-
-<nav class="topnav">
-  <div class="logo">
-    <span class="logo-brand">Buenos Aires Living</span>
-    <div class="logo-divider"></div>
-    <span class="logo-sub">Mi Catálogo</span>
-  </div>
-  <div class="nav-right">
-    <div class="tab-toggle">
-      <button class="tab-btn active" id="tab-agent" onclick="switchTab('agent')"></button>
-      <button class="tab-btn" id="tab-visits" onclick="switchTab('visits')"></button>
-      <button class="tab-btn" id="tab-client" onclick="switchTab('client')"></button>
-    </div>
-    <div class="lang-group">
-      <button class="lang-btn" onclick="setLang('es')">ES</button>
-      <button class="lang-btn" onclick="setLang('en')">EN</button>
-      <button class="lang-btn" onclick="setLang('ru')">RU</button>
-    </div>
-  </div>
-</nav>
-
-<!-- AGENT VIEW -->
-<div class="view active" id="view-agent">
-  <div class="container">
-    <div id="clients-list-view">
-      <div class="page-header">
-        <div class="page-title" id="lbl-my-clients-title">Mis clientes<small id="lbl-clients-sub"></small></div>
-        <button class="btn btn-primary" onclick="openNewClient()">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          <span id="lbl-new-client">Nuevo cliente</span>
-        </button>
-      </div>
-      <div class="clients-grid" id="clients-grid"></div>
-    </div>
-
-    <div id="client-detail-view" style="display:none">
-      <div class="back-link" onclick="showClientsList()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
-        <span id="lbl-all-clients">Todos los clientes</span>
-      </div>
-      <div class="detail-hero">
-        <div class="avatar-lg" id="detail-avatar"></div>
-        <div class="detail-info">
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px">
-            <div class="detail-name" id="detail-name"></div>
-            <button class="btn btn-sm btn-ghost" onclick="openEditClient()" style="padding:4px 8px" title="Editar cliente">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-            </button>
-          </div>
-          <div id="detail-budget-wrap" style="display:flex;flex-direction:column;gap:3px;margin-bottom:10px"></div>
-          <div class="link-row">
-            <svg viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="2" style="width:13px;height:13px;flex-shrink:0"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-            <span class="link-text" id="detail-link"></span>
-            <button class="btn btn-sm btn-ghost" onclick="copyLink()" id="copy-btn" style="padding:3px 8px;font-size:12px">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-              <span id="lbl-copy">Copiar</span>
-            </button>
-          </div>
-        </div>
-      </div>
-      <div class="add-section">
-        <div class="add-section-title">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          <span id="lbl-add-prop">Agregar propiedad</span>
-        </div>
-        <div class="input-row" style="margin-bottom:8px">
-          <input type="text" class="input-url" id="new-url">
-          <input type="text" class="input-price" id="new-price">
-          <input type="text" class="input-addr" id="new-addr">
-          <button class="btn btn-primary" onclick="addProperty()">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            <span id="lbl-add-btn">Agregar</span>
-          </button>
-        </div>
-        <div class="input-row">
-          <input type="text" class="input-rooms" id="new-rooms">
-          <input type="text" class="input-m2" id="new-m2">
-          <input type="text" class="input-floor" id="new-floor">
-        </div>
-        <div class="input-row" style="margin-top:8px">
-          <input type="number" id="new-covered" style="width:100px" placeholder="Cubierta m²">
-          <input type="number" id="new-semicov" style="width:110px" placeholder="Semicub. m²">
-          <input type="number" id="new-open" style="width:100px" placeholder="Descub. m²">
-          <input type="number" id="new-avg-price" style="width:130px" placeholder="Precio m² barrio">
-        </div>
-        <div class="input-row" style="margin-top:8px">
-          <input type="text" id="new-photo" style="flex:1" placeholder="">
-        </div>
-      </div>
-      <div style="display:flex;gap:6px;margin-bottom:1.25rem;flex-wrap:wrap" id="agent-filter-bar">
-        <div class="pill active" id="agent-pill-new" onclick="setAgentFilter('new',this)">✨ Nuevas</div>
-        <div class="pill" id="agent-pill-liked" onclick="setAgentFilter('liked',this)">❤️ <span id="lbl-agent-liked">Me gusta</span></div>
-        <div class="pill" onclick="setAgentFilter('rejected',this)" id="agent-pill-rejected">✕ No encaja</div>
-      </div>
-      <div id="detail-props-grid"></div>
-    </div>
-  </div>
-</div>
-
-<!-- VISITS VIEW -->
-<div class="view" id="view-visits">
-  <div class="container">
-    <div class="page-header">
-      <div class="page-title" id="lbl-visits-title">Visitas<small id="lbl-visits-sub"></small></div>
-    </div>
-    <div class="visits-grid">
-      <div class="v-panel">
-        <div class="v-panel-head">
-          <div class="v-panel-title">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-            <span id="lbl-cal-title">Calendario</span>
-          </div>
-          <div class="cal-nav">
-            <button onclick="prevMonth()" aria-label="Mes anterior"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg></button>
-            <span class="cal-month-lbl" id="cal-month-lbl"></span>
-            <button onclick="nextMonth()" aria-label="Mes siguiente"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></button>
-          </div>
-        </div>
-        <div class="v-panel-body">
-          <div class="cal-grid" id="cal-grid"></div>
-          <div id="day-visits"></div>
-          <button class="add-visit-btn" onclick="toggleVisitForm()">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            <span id="lbl-add-visit">Agregar visita</span>
-          </button>
-          <div class="add-visit-form" id="add-visit-form">
-            <div class="form-row">
-              <input type="date" id="f-date">
-              <input type="time" id="f-time" value="10:00">
-            </div>
-            <input type="text" id="f-addr" style="width:100%">
-            <div class="form-row">
-              <select id="f-client" style="flex:1;padding:9px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;outline:none">
-                <option value="">— Seleccionar cliente —</option>
-              </select>
-              <input type="text" id="f-url">
-            </div>
-            <div class="form-actions">
-              <button onclick="toggleVisitForm()" id="lbl-v-cancel">Cancelar</button>
-              <button class="save-btn" onclick="saveVisit()" id="lbl-v-save">Guardar</button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="v-panel">
-        <div class="v-panel-head">
-          <div class="v-panel-title">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-            <span id="lbl-route-title">Ruta del día</span>
-          </div>
-        </div>
-        <div class="v-panel-body">
-          <div class="map-wrap" id="lmap-agent"></div>
-          <div class="route-chips" id="route-chips"></div>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- CLIENT VIEW -->
-<div class="view" id="view-client">
-  <div class="container">
-    <div class="client-hero">
-      <div class="client-hero-left">
-        <h1 id="client-hero-title">Tu selección</h1>
-        <p id="client-hero-sub"></p>
-        <div id="client-hero-chips" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px"></div>
-      </div>
-      <div class="client-hero-badge">
-        <div class="num" id="client-count">0</div>
-        <div class="lbl" id="client-count-lbl">propiedades</div>
-      </div>
-    </div>
-    <div class="autosave-note" id="autosave-note" style="display:none">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 12 4 12"/><polyline points="20 6 9 12 20 18"/></svg>
-      <span id="lbl-autosave">Tus comentarios y favoritos se guardan automáticamente</span>
-    </div>
-    <div style="display:flex;gap:6px;margin-bottom:1.25rem;flex-wrap:wrap" id="client-filter-bar">
-      <div class="pill active" onclick="setClientFilter('new',this)" id="cpill-new">✨ Nuevas</div>
-      <div class="pill" onclick="setClientFilter('liked',this)" id="cpill-liked">❤️ Me gusta</div>
-      <div class="pill" onclick="setClientFilter('rejected',this)" id="cpill-rejected">✕ No encaja</div>
-    </div>
-    <div id="client-props-grid"></div>
-
-    <div id="client-visits-section" style="margin-top:2.5rem;display:none">
-      <div style="font-family:'DM Serif Display',serif;font-size:22px;margin-bottom:1.25rem;color:var(--text)" id="lbl-client-visits-title">Mis visitas programadas</div>
-      <div class="visits-grid">
-        <div class="v-panel">
-          <div class="v-panel-head">
-            <div class="v-panel-title">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-              <span id="lbl-cal-title-c">Calendario</span>
-            </div>
-            <div class="cal-nav">
-              <button onclick="prevMonthC()" aria-label="Mes anterior"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg></button>
-              <span class="cal-month-lbl" id="cal-month-lbl-c"></span>
-              <button onclick="nextMonthC()" aria-label="Mes siguiente"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></button>
-            </div>
-          </div>
-          <div class="v-panel-body">
-            <div class="cal-grid" id="cal-grid-c"></div>
-            <div id="day-visits-c"></div>
-          </div>
-        </div>
-        <div class="v-panel">
-          <div class="v-panel-head">
-            <div class="v-panel-title">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-              <span id="lbl-route-title-c">Ruta del día</span>
-            </div>
-          </div>
-          <div class="v-panel-body">
-            <div class="map-wrap" id="lmap-client"></div>
-            <div class="route-chips" id="route-chips-c"></div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- INFO SECTION -->
-    <div id="client-info-section" style="margin-top:3rem;display:none">
-
-      <!-- Дополнительные платежи -->
-      <div style="margin-bottom:2rem" id="info-payments-block">
-        <div id="info-payments-title" style="font-family:'DM Serif Display',serif;font-size:22px;color:var(--text);margin-bottom:1.25rem">Дополнительные платежи при покупке</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
-          <div style="background:var(--accent);border-radius:var(--radius);padding:1.5rem">
-            <div id="info-agency-fee-title" style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.6);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Comisión de la agencia</div>
-            <div style="font-family:'DM Serif Display',serif;font-size:36px;color:#fff;margin-bottom:8px">4% + IVA</div>
-            <div id="info-agency-fee-desc" style="font-size:13px;color:rgba(255,255,255,0.75);margin-bottom:6px">IVA — 21% sobre el 4% lo paga el comprador.</div>
-            <div id="info-agency-fee-note" style="font-size:12px;color:rgba(255,255,255,0.55);font-style:italic">La comisión se divide entre las agencias del vendedor y comprador — Coldwell Banker Seniority recibe el 2%.</div>
-          </div>
-          <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.5rem;box-shadow:var(--shadow)">
-            <div id="info-notary-fee-title" style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Gastos del escribano</div>
-            <div style="font-family:'DM Serif Display',serif;font-size:36px;color:var(--accent);margin-bottom:8px">~2% +</div>
-            <div id="info-notary-fee-desc" style="font-size:13px;color:var(--text2)">de la operación + costo de documentación. El monto exacto se calcula antes de la escritura.</div>
-          </div>
-        </div>
-        <div id="info-total-fee" style="background:#C9A84C;border-radius:var(--radius-sm);padding:12px 18px;font-size:14px;font-weight:600;color:#fff;margin-bottom:10px">
-          Total ~8% de gastos adicionales al comprar
-        </div>
-        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px 18px;box-shadow:var(--shadow)">
-          <div id="info-stamp-tax-title" style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:6px">⚠️ Impuesto de sellos</div>
-          <div id="info-stamp-tax-desc" style="font-size:13px;color:var(--text2)">No se aplica en la compra del primer inmueble (única vivienda). En compras posteriores — tasa del 3,5% del valor de la operación, dividida en partes iguales: el comprador paga el 1,75%.</div>
-        </div>
-      </div>
-
-      <!-- Этапы сделки -->
-      <div>
-        <div id="info-steps-title" style="font-family:'DM Serif Display',serif;font-size:22px;color:var(--text);margin-bottom:1.25rem">Etapas de la operación</div>
-        <div id="info-steps-list" style="display:flex;flex-direction:column;gap:0">
-          <div style="display:flex;align-items:flex-start;gap:16px;padding:16px 0;border-bottom:1px solid var(--border)">
-            <div style="width:36px;height:36px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-family:'DM Serif Display',serif;font-size:16px;flex-shrink:0">1</div>
-            <div style="flex:1"><div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:4px"><div style="font-size:15px;font-weight:600;color:var(--text)">Reserva</div><div style="font-size:12px;padding:2px 10px;border-radius:20px;background:var(--surface2);color:var(--text2);border:1px solid var(--border)">$1.000–2.000</div></div><div style="font-size:13px;color:var(--text2)">El comprador deposita una suma pequeña — esto abre la negociación del precio con el vendedor.</div></div>
-          </div>
-          <div style="display:flex;align-items:flex-start;gap:16px;padding:16px 0;border-bottom:1px solid var(--border)">
-            <div style="width:36px;height:36px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-family:'DM Serif Display',serif;font-size:16px;flex-shrink:0">2</div>
-            <div style="flex:1"><div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:4px"><div style="font-size:15px;font-weight:600;color:var(--text)">Negociación de precio</div><div style="font-size:12px;padding:2px 10px;border-radius:20px;background:var(--surface2);color:var(--text2);border:1px solid var(--border)">~1 semana</div></div><div style="font-size:13px;color:var(--text2)">Si las partes no llegan a un acuerdo — la reserva se devuelve íntegramente al comprador.</div></div>
-          </div>
-          <div style="display:flex;align-items:flex-start;gap:16px;padding:16px 0;border-bottom:1px solid var(--border)">
-            <div style="width:36px;height:36px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-family:'DM Serif Display',serif;font-size:16px;flex-shrink:0">3</div>
-            <div style="flex:1"><div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:4px"><div style="font-size:15px;font-weight:600;color:var(--text)">Verificación de documentos</div><div style="font-size:12px;padding:2px 10px;border-radius:20px;background:var(--surface2);color:var(--text2);border:1px solid var(--border)">Informe de inhibiciones · ~10 días</div></div><div style="font-size:13px;color:var(--text2)">Precio acordado — se verifican los documentos del inmueble y del titular: cargas, titularidad.</div></div>
-          </div>
-          <div style="display:flex;align-items:flex-start;gap:16px;padding:16px 0;border-bottom:1px solid var(--border)">
-            <div style="width:36px;height:36px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-family:'DM Serif Display',serif;font-size:16px;flex-shrink:0">4</div>
-            <div style="flex:1"><div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:4px"><div style="font-size:15px;font-weight:600;color:var(--text)">Refuerzo</div><div style="font-size:12px;padding:2px 10px;border-radius:20px;background:var(--surface2);color:var(--text2);border:1px solid var(--border)">$4.000–10.000 · ~1 mes</div></div><div style="font-size:13px;color:var(--text2)">Se deposita el anticipo reforzado. Comienza el trabajo del escribano (elegido por el comprador) — revisa y prepara documentos.</div></div>
-          </div>
-          <div style="display:flex;align-items:flex-start;gap:16px;padding:16px 0;border-bottom:1px solid var(--border)">
-            <div style="width:36px;height:36px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-family:'DM Serif Display',serif;font-size:16px;flex-shrink:0">5</div>
-            <div style="flex:1"><div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:4px"><div style="font-size:15px;font-weight:600;color:var(--text)">Escritura</div><div style="font-size:12px;padding:2px 10px;border-radius:20px;background:var(--surface2);color:var(--text2);border:1px solid var(--border)">El lugar lo elige el vendedor</div></div><div style="font-size:13px;color:var(--text2)">Firma de los documentos de transferencia de propiedad — operación concluida.</div></div>
-          </div>
-        </div>
-        <div id="info-steps-footer" style="background:var(--accent);border-radius:var(--radius-sm);padding:14px 18px;margin-top:14px;font-size:14px;font-weight:600;color:#fff">
-          Todo el proceso — desde la reserva hasta la escritura — lleva como mínimo unos 2 meses
-        </div>
-      </div>
-
-    </div>
-</div>
-
-<!-- MODAL -->
-<!-- EDIT VISIT MODAL -->
-<div class="modal-overlay" id="edit-visit-modal">
-  <div class="modal">
-    <div class="modal-title">Editar visita</div>
-    <div class="form-field">
-      <label>Cliente</label>
-      <select id="ev-client" style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;outline:none">
-        <option value="">— Seleccionar cliente —</option>
-      </select>
-    </div>
-    <div class="form-field">
-      <label>Fecha</label>
-      <input type="date" id="ev-date" style="width:100%">
-    </div>
-    <div class="form-field">
-      <label>Hora</label>
-      <input type="time" id="ev-time" style="width:100%">
-    </div>
-    <div class="form-field">
-      <label>Dirección</label>
-      <input type="text" id="ev-addr" style="width:100%">
-    </div>
-    <div class="form-field">
-      <label>Enlace propiedad (opcional)</label>
-      <input type="text" id="ev-url" style="width:100%">
-    </div>
-    <div class="modal-footer">
-      <button class="btn" onclick="closeEditVisit()">Cancelar</button>
-      <button class="btn btn-primary" onclick="saveEditVisit()">Guardar</button>
-    </div>
-  </div>
-</div>
-
-<!-- SCHEDULE VISIT MODAL -->
-<div class="modal-overlay" id="schedule-visit-modal">
-  <div class="modal">
-    <div class="modal-title">Agendar visita</div>
-    <div id="sv-prop-info" style="background:var(--surface2);border-radius:var(--radius-sm);padding:10px 14px;margin-bottom:1rem;font-size:14px;color:var(--text2)"></div>
-    <div class="form-field">
-      <label>Fecha</label>
-      <input type="date" id="sv-date" style="width:100%">
-    </div>
-    <div class="form-field">
-      <label>Hora</label>
-      <input type="time" id="sv-time" value="10:00" style="width:100%">
-    </div>
-    <div class="form-field">
-      <label>Dirección de visita</label>
-      <input type="text" id="sv-addr" style="width:100%">
-    </div>
-    <div class="modal-footer">
-      <button class="btn" onclick="closeScheduleVisit()">Cancelar</button>
-      <button class="btn btn-primary" onclick="confirmScheduleVisit()">Agendar</button>
-    </div>
-  </div>
-</div>
-
-<!-- EDIT CLIENT MODAL -->
-<div class="modal-overlay" id="edit-client-modal">
-  <div class="modal">
-    <div class="modal-title">Editar cliente</div>
-    <div class="form-field"><label id="lbl-ec-name">Nombre</label><input type="text" id="ec-name"></div>
-    <div class="form-field"><label>Presupuesto (USD)</label><input type="text" id="ec-budget" placeholder="Ej: hasta USD 150.000"></div>
-    <div class="form-field"><label>Barrio / Zona</label><input type="text" id="ec-zone" placeholder="Ej: Palermo, Villa Crespo"></div>
-    <div class="form-field"><label>Otras preferencias</label><textarea id="ec-prefs" placeholder="Ej: 3 ambientes, luminoso, con balcón" style="width:100%;min-height:72px;padding:9px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;outline:none;resize:none"></textarea></div>
-    <div class="modal-footer">
-      <button class="btn btn-danger-ghost" onclick="deleteClientFromModal()" style="margin-right:auto">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
-        Eliminar cliente
-      </button>
-      <button class="btn" onclick="closeEditClient()">Cancelar</button>
-      <button class="btn btn-primary" onclick="saveEditClient()">Guardar</button>
-    </div>
-  </div>
-</div>
-
-<!-- EDIT PROPERTY MODAL -->
-<div class="modal-overlay" id="edit-prop-modal">
-  <div class="modal edit-modal" onclick="event.stopPropagation()">
-    <div class="modal-title">Editar propiedad</div>
-    <div class="edit-grid">
-      <div class="form-field full"><label>URL</label><input type="text" id="ep-url"></div>
-      <div class="form-field"><label>Precio (USD)</label><input type="text" id="ep-price"></div>
-      <div class="form-field"><label>Dirección</label><input type="text" id="ep-addr"></div>
-      <div class="form-field"><label>Amb.</label><input type="text" id="ep-rooms"></div>
-      <div class="form-field"><label>m²</label><input type="text" id="ep-m2"></div>
-      <div class="form-field full"><label>Piso / extra</label><input type="text" id="ep-floor"></div>
-      <div class="form-field full"><label>URL de foto (click derecho → copiar dirección de imagen)</label><input type="text" id="ep-photo"></div>
-      <div class="edit-grid" style="grid-column:1/-1;gap:8px;display:grid;grid-template-columns:1fr 1fr 1fr 1fr">
-        <div class="form-field"><label>Cubierta m²</label><input type="number" id="ep-covered"></div>
-        <div class="form-field"><label>Semicub. m²</label><input type="number" id="ep-semicov"></div>
-        <div class="form-field"><label>Descub. m²</label><input type="number" id="ep-open"></div>
-        <div class="form-field"><label>Precio m² barrio</label><input type="number" id="ep-avg-price"></div>
-      </div>
-      <div class="form-field full">
-        <label>📐 Plano (subir imagen)</label>
-        <input type="file" id="ep-plan-file" accept="image/*,application/pdf" onchange="onPlanFileChosen(this)" style="font-size:13px">
-        <div id="ep-plan-preview" style="margin-top:8px;display:none;align-items:center;gap:10px">
-          <img id="ep-plan-img" src="" alt="" style="max-height:90px;max-width:140px;border-radius:6px;border:1px solid var(--border);object-fit:contain;background:#fff">
-          <button type="button" class="btn btn-sm btn-danger-ghost" onclick="removePlanInModal()">Quitar plano</button>
-        </div>
-      </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn" onclick="closeEditProp()">Cancelar</button>
-      <button class="btn btn-primary" onclick="saveEditProp()">Guardar cambios</button>
-    </div>
-  </div>
-</div>
-
-<!-- PLAN LIGHTBOX -->
-<div id="plan-lightbox" onclick="closePlan()" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:10000;align-items:center;justify-content:center;padding:16px;box-sizing:border-box;cursor:zoom-out">
-  <img id="plan-lightbox-img" src="" alt="Plano" style="max-width:100%;max-height:100%;object-fit:contain;background:#fff;border-radius:6px">
-  <div style="position:absolute;top:14px;right:18px;color:#fff;font-size:30px;line-height:1">✕</div>
-</div>
-
-<!-- COPY PROPERTY MODAL -->
-<div class="modal-overlay" id="copy-prop-modal">
-  <div class="modal">
-    <div class="modal-title">Copiar a otro cliente</div>
-    <div id="copy-prop-info" style="background:var(--surface2);border-radius:var(--radius-sm);padding:10px 14px;margin-bottom:1rem;font-size:14px;color:var(--text2)"></div>
-    <div class="form-field">
-      <label>Seleccionar cliente</label>
-      <select id="copy-prop-client" style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;outline:none">
-        <option value="">— Elegir cliente —</option>
-      </select>
-    </div>
-    <div class="modal-footer">
-      <button class="btn" onclick="closeCopyProp()">Cancelar</button>
-      <button class="btn btn-primary" onclick="confirmCopyProp()">Copiar</button>
-    </div>
-  </div>
-</div>
-
-<div class="modal-overlay" id="new-client-modal">
-  <div class="modal">
-    <div class="modal-title" id="modal-title">Nuevo cliente</div>
-    <div class="form-field"><label id="lbl-name-field">Nombre</label><input type="text" id="nc-name"></div>
-    <div class="form-field"><label id="lbl-budget-field">Presupuesto (USD)</label><input type="text" id="nc-budget" placeholder="Ej: hasta USD 150.000"></div>
-    <div class="form-field"><label id="lbl-zone-field">Barrio / Zona</label><input type="text" id="nc-zone" placeholder="Ej: Palermo, Villa Crespo, Recoleta"></div>
-    <div class="form-field"><label id="lbl-prefs-field">Otras preferencias</label><textarea id="nc-prefs" placeholder="Ej: 3 ambientes, luminoso, con balcón, no PB" style="width:100%;min-height:72px;padding:9px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;outline:none;resize:none"></textarea></div>
-    <div class="modal-footer">
-      <button class="btn" onclick="closeModal()" id="lbl-cancel">Cancelar</button>
-      <button class="btn btn-primary" onclick="createClient()" id="lbl-create">Crear cliente</button>
-    </div>
-  </div>
-</div>
-
-<script>
-const LANGS = {
-  es: {
-    tabAgent:'Panel del agente', tabVisits:'Visitas', tabClient:'Vista del cliente',
-    myClients:'Mis clientes', clientsSub:(n)=>`${n} cliente${n!==1?'s':''}`,
-    newClient:'Nuevo cliente', allClients:'Todos los clientes',
-    copy:'Copiar', copied:'¡Copiado!',
-    addProp:'Agregar propiedad', addBtn:'Agregar',
-    urlPh:'https://zonaprop.com.ar/... o mercadolibre.com.ar/...',
-    pricePh:'Precio (USD)', addrPh:'Dirección',
-    roomsPh:'Amb.', m2Ph:'m²', floorPh:'Piso / extra',
-    modalTitle:'Nuevo cliente', nameField:'Nombre', budgetField:'Presupuesto / notas',
-    budgetPh:'Ej: hasta USD 150.000, 3 amb.', cancel:'Cancelar', create:'Crear cliente',
-    autosave:'Tus comentarios y favoritos se guardan automáticamente',
-    all:'Todas', favorites:'Favoritas',
-    heroTitle:(n)=>`Selección para ${n}`, heroSub:'Tu catálogo personalizado',
-    heroLbl:(n)=>n===1?'propiedad':'propiedades',
-    viewPortal:'Ver en portal', commentPh:'Agregar comentario...',
-    saved:'Guardado', noProps:'No hay propiedades aún.', noClients:'Todavía no hay clientes. ¡Creá el primero!',
-    propCount:(n)=>`${n} prop.`,
-    agentLiked:'Favoritos del cliente', visitsTitle:'Visitas', visitsSub:(n)=>`${n} programada${n!==1?'s':''}`, clientVisitsTitle:'Mis visitas programadas', calTitleC:'Calendario', routeTitleC:'Ruta del día',
-    calTitle:'Calendario', routeTitle:'Ruta del día',
-    addVisit:'Agregar visita', vCancel:'Cancelar', vSave:'Guardar',
-    fAddrPh:'Dirección (ej: Av. Libertador 1500)', fPhotoPh:'URL de foto (click derecho → copiar dirección de imagen)', fClientPh:'Cliente', fUrlPh:'Enlace propiedad (opcional)',
-    noVisits:'Sin visitas este día',
-    planBtn:'📐 Plano',
-    infoPaymentsTitle:'Pagos adicionales al comprar',
-    infoAgencyFee:'Comisión de la agencia',
-    infoAgencyFeeDesc:'IVA — 21% sobre el 4% lo paga el comprador.',
-    infoAgencyFeeNote:'La comisión se divide entre las agencias del vendedor y comprador — Coldwell Banker Seniority recibe el 2%.',
-    infoNotaryFee:'Gastos del escribano',
-    infoNotaryFeeDesc:'de la operación + costo de documentación. El monto exacto se calcula antes de la escritura.',
-    infoTotalFee:'Total ~8% de gastos adicionales al comprar',
-    infoStampTax:'⚠️ Impuesto de sellos',
-    infoStampTaxDesc:'No se aplica en la compra del primer inmueble (única vivienda). En compras posteriores — tasa del 3,5% del valor de la operación, dividida en partes iguales: el comprador paga el 1,75%.',
-    infoStepsTitle:'Etapas de la operación',
-    infoSteps:[
-      {title:'Reserva', tag:'$1.000–2.000', desc:'El comprador deposita una suma pequeña — esto abre la negociación del precio con el vendedor.'},
-      {title:'Negociación de precio', tag:'~1 semana', desc:'Si las partes no llegan a un acuerdo — la reserva se devuelve íntegramente al comprador.'},
-      {title:'Verificación de documentos', tag:'Informe de inhibiciones · ~10 días', desc:'Precio acordado — se verifican los documentos del inmueble y del titular: cargas, titularidad.'},
-      {title:'Refuerzo', tag:'$4.000–10.000 · ~1 mes', desc:'Se deposita el anticipo reforzado. Comienza el trabajo del escribano (elegido por el comprador) — revisa y prepara documentos.'},
-      {title:'Escritura', tag:'El lugar lo elige el vendedor', desc:'Firma de los documentos de transferencia de propiedad — operación concluida.'},
-    ],
-    infoStepsFooter:'Todo el proceso — desde la reserva hasta la escritura — lleva como mínimo unos 2 meses',
-    MONTHS:['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'],
-    DAYS:['Lu','Ma','Mi','Ju','Vi','Sa','Do'],
-    visitCount:(n)=>`${n} visita${n!==1?'s':''}`, estDist:(km)=>`~${km} km est.`,
-  },
-  en: {
-    tabAgent:'Agent panel', tabVisits:'Visits', tabClient:'Client view',
-    myClients:'My clients', clientsSub:(n)=>`${n} client${n!==1?'s':''}`,
-    newClient:'New client', allClients:'All clients',
-    copy:'Copy', copied:'Copied!',
-    addProp:'Add property', addBtn:'Add',
-    urlPh:'https://zonaprop.com.ar/... or mercadolibre.com.ar/...',
-    pricePh:'Price (USD)', addrPh:'Address',
-    roomsPh:'Rooms', m2Ph:'sqm', floorPh:'Floor / notes',
-    modalTitle:'New client', nameField:'Name', budgetField:'Budget / notes',
-    budgetPh:'e.g. up to USD 150,000, 3 rooms', cancel:'Cancel', create:'Create client',
-    autosave:'Your comments and favorites are saved automatically',
-    all:'All', favorites:'Favorites',
-    heroTitle:(n)=>`Selection for ${n}`, heroSub:'Your personalized catalog',
-    heroLbl:(n)=>n===1?'property':'properties',
-    viewPortal:'View listing', commentPh:'Add a comment...',
-    saved:'Saved', noProps:'No properties yet.', noClients:'No clients yet. Create the first one!',
-    propCount:(n)=>`${n} prop.`,
-    agentLiked:'Client favorites', visitsTitle:'Visits', visitsSub:(n)=>`${n} scheduled`, clientVisitsTitle:'My scheduled visits', calTitleC:'Calendar', routeTitleC:'Route for the day',
-    calTitle:'Calendar', routeTitle:'Route for the day',
-    addVisit:'Add visit', vCancel:'Cancel', vSave:'Save',
-    fAddrPh:'Address (e.g. Av. Libertador 1500)', fPhotoPh:'Photo URL (right click image → copy image address)', fClientPh:'Client', fUrlPh:'Property link (optional)',
-    noVisits:'No visits on this day',
-    planBtn:'📐 Floor plan',
-    infoPaymentsTitle:'Additional costs when buying',
-    infoAgencyFee:'Agency commission',
-    infoAgencyFeeDesc:'VAT — 21% on the 4% is paid by the buyer.',
-    infoAgencyFeeNote:'The commission is split between the seller\'s and buyer\'s agencies — Coldwell Banker Seniority receives 2%.',
-    infoNotaryFee:'Notary fees (Escribano)',
-    infoNotaryFeeDesc:'of the transaction amount + document processing costs. Exact amount is calculated before closing.',
-    infoTotalFee:'Total ~8% additional costs when buying',
-    infoStampTax:'⚠️ Stamp tax (Impuesto de sellos)',
-    infoStampTaxDesc:'Not applicable on the purchase of a first property (sole residence). On subsequent purchases — rate of 3.5% of transaction value, split equally: buyer pays 1.75%.',
-    infoStepsTitle:'Transaction stages',
-    infoSteps:[
-      {title:'Reserva', tag:'$1,000–2,000', desc:'The buyer deposits a small amount — this opens price negotiations with the seller.'},
-      {title:'Price negotiation', tag:'~1 week', desc:'If the parties cannot agree on a price — the reserva is fully returned to the buyer.'},
-      {title:'Document verification', tag:'Informe de inhibiciones · ~10 days', desc:'Price agreed — property and owner documents are verified: encumbrances, ownership title.'},
-      {title:'Refuerzo', tag:'$4,000–10,000 · ~1 month', desc:'Reinforced deposit is made. Notary (chosen by buyer) begins work — reviews and prepares documents for closing.'},
-      {title:'Escritura (closing)', tag:'Location chosen by seller', desc:'Signing of property transfer documents — transaction complete.'},
-    ],
-    infoStepsFooter:'The entire process — from reserva to escritura — takes a minimum of about 2 months',
-    MONTHS:['January','February','March','April','May','June','July','August','September','October','November','December'],
-    DAYS:['Mo','Tu','We','Th','Fr','Sa','Su'],
-    visitCount:(n)=>`${n} visit${n!==1?'s':''}`, estDist:(km)=>`~${km} km est.`,
-  },
-  ru: {
-    tabAgent:'Панель агента', tabVisits:'Визиты', tabClient:'Вид клиента',
-    myClients:'Мои клиенты', clientsSub:(n)=>`${n} клиент${n===1?'':n<5?'а':'ов'}`,
-    newClient:'Новый клиент', allClients:'Все клиенты',
-    copy:'Копировать', copied:'Скопировано!',
-    addProp:'Добавить объект', addBtn:'Добавить',
-    urlPh:'https://zonaprop.com.ar/... или mercadolibre.com.ar/...',
-    pricePh:'Цена (USD)', addrPh:'Адрес',
-    roomsPh:'Комн.', m2Ph:'м²', floorPh:'Этаж / инфо',
-    modalTitle:'Новый клиент', nameField:'Имя', budgetField:'Бюджет / заметки',
-    budgetPh:'напр. до USD 150.000, 3 комн.', cancel:'Отмена', create:'Создать клиента',
-    autosave:'Комментарии и избранное сохраняются автоматически',
-    all:'Все', favorites:'Избранное',
-    heroTitle:(n)=>`Подборка для ${n}`, heroSub:'Ваш персональный каталог',
-    heroLbl:(n)=>n===1?'объект':n<5?'объекта':'объектов',
-    viewPortal:'Открыть на портале', commentPh:'Добавить комментарий...',
-    saved:'Сохранено', noProps:'Нет объектов.', noClients:'Клиентов пока нет. Создайте первого!',
-    propCount:(n)=>`${n} об.`,
-    agentLiked:'Избранное клиента', visitsTitle:'Визиты', visitsSub:(n)=>`${n} запланиров${n===1?'ан':'ано'}`, clientVisitsTitle:'Мои запланированные визиты', calTitleC:'Календарь', routeTitleC:'Маршрут дня',
-    calTitle:'Календарь', routeTitle:'Маршрут дня',
-    addVisit:'Добавить визит', vCancel:'Отмена', vSave:'Сохранить',
-    fAddrPh:'Адрес (напр. Av. Libertador 1500)', fPhotoPh:'URL фото (правая кнопка → копировать адрес изображения)', fClientPh:'Клиент', fUrlPh:'Ссылка на объект (опц.)',
-    noVisits:'Визитов в этот день нет',
-    planBtn:'📐 Планировка',
-    infoPaymentsTitle:'Дополнительные платежи при покупке',
-    infoAgencyFee:'Комиссия агентства',
-    infoAgencyFeeDesc:'НДС — 21% от 4% платит покупатель.',
-    infoAgencyFeeNote:'Комиссия делится между агентствами продавца и покупателя — Coldwell Banker Seniority получает 2%.',
-    infoNotaryFee:'Расходы нотариуса (Escribano)',
-    infoNotaryFeeDesc:'от суммы сделки + стоимость оформления документов. Точная сумма просчитывается непосредственно перед сделкой.',
-    infoTotalFee:'Итого ~8% дополнительных расходов при покупке',
-    infoStampTax:'⚠️ Гербовый сбор (impuesto de sellos)',
-    infoStampTaxDesc:'Не уплачивается при покупке первой квартиры (единственное жильё). При последующих покупках — ставка 3,5% от суммы сделки, делится поровну: покупатель платит 1,75%.',
-    infoStepsTitle:'Этапы сделки',
-    infoSteps:[
-      {title:'Reserva', tag:'$1.000–2.000', desc:'Покупатель вносит небольшую сумму — это открывает переговоры о цене с продавцом.'},
-      {title:'Переговоры о цене', tag:'~1 неделя', desc:'Если стороны не сходятся в цене — reserva полностью возвращается покупателю.'},
-      {title:'Проверка документов', tag:'Informe de inhibiciones · ~10 дней', desc:'Цена согласована — проверяются документы квартиры и собственника: обременения, право собственности.'},
-      {title:'Refuerzo', tag:'$4.000–10.000 · ~1 месяц', desc:'Вносится усиленный задаток. Начинает работу нотариус (выбирает покупатель) — проверяет и готовит документы к сделке.'},
-      {title:'Escritura (сделка)', tag:'Место выбирает продавец', desc:'Подписание документов о передаче права собственности — сделка завершена.'},
-    ],
-    infoStepsFooter:'Весь процесс — от reserva до escritura — занимает минимум около 2 месяцев',
-    MONTHS:['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'],
-    DAYS:['Пн','Вт','Ср','Чт','Пт','Сб','Вс'],
-    visitCount:(n)=>`${n} визит${n===1?'':n<5?'а':'ов'}`, estDist:(km)=>`~${km} км ест.`,
-  }
-};
-
-// =========================================================
-//  PASTE YOUR APPS SCRIPT URL HERE after deploying
-// =========================================================
-const API_URL = 'https://script.google.com/macros/s/AKfycbw8xbnxE4WlIFdiSLPOCc4zEbf9psRq3NSsl6brr5FRMaLXEWeHMxNWoG9XgCnqp_Hu/exec';
-// =========================================================
-
-let lang = 'es';
-let state = { clients: [], currentClient: null, filter: 'all' };
-let visits = [];
-
-/* ---- API via JSONP with retry ---- */
-function apiOnce(action, data={}) {
-  return new Promise((resolve) => {
-    const cbName = 'cb_' + Date.now() + '_' + Math.random().toString(36).slice(2,6);
-    const flat = {};
-    for(const [k,v] of Object.entries(data)) flat[k] = (v===null||v===undefined)?'':String(v);
-    const params = new URLSearchParams({ action, callback: cbName, ...flat });
-    const url = API_URL + '?' + params.toString();
-    const script = document.createElement('script');
-    const timeout = setTimeout(() => {
-      cleanup();
-      resolve({ error: 'timeout' });
-    }, 30000);
-    function cleanup() {
-      clearTimeout(timeout);
-      try { delete window[cbName]; } catch(e){}
-      if(script.parentNode) script.parentNode.removeChild(script);
-    }
-    window[cbName] = function(result) { cleanup(); resolve(result); };
-    script.onerror = function() { cleanup(); resolve({ error: 'load error' }); };
-    script.src = url;
-    document.head.appendChild(script);
-  });
+function doGet(e) {
+  return handleRequest(e);
 }
 
-async function api(action, data={}, retries=2) {
-  console.log('API call:', action, data);
-  for(let i = 0; i <= retries; i++) {
-    const result = await apiOnce(action, data);
-    if(!result.error) return result;
-    if(i < retries) {
-      console.log('API retry', i+1, 'for:', action, '- error:', result.error);
-      await new Promise(r => setTimeout(r, 1000)); // wait 1s before retry
-    } else {
-      console.error('API failed after', retries+1, 'attempts:', action, result.error);
-      return result;
-    }
-  }
-}
-
-function showSpinner(show) {
-  let el = document.getElementById('global-spinner');
-  if(!el) {
-    el = document.createElement('div');
-    el.id = 'global-spinner';
-    el.style.cssText = 'position:fixed;top:0;left:0;right:0;height:3px;background:var(--accent);z-index:999;transition:opacity .3s';
-    document.body.appendChild(el);
-  }
-  el.style.opacity = show ? '1' : '0';
-}
-
-async function loadClients() {
-  showSpinner(true);
-  const data = await api('getClients');
-  showSpinner(false);
-  console.log('loadClients response:', data);
-  if(Array.isArray(data)) {
-    state.clients = data.map(c => ({ ...c, props: [], prop_count: c.prop_count||0, liked_count: c.liked_count||0, zone: c.zone||'', prefs: c.prefs||'' }));
-    renderClientsGrid();
-  } else {
-    const grid = document.getElementById('clients-grid');
-    if(grid) grid.innerHTML = '<div class="empty" style="grid-column:1/-1"><p style="color:var(--danger)">Error conectando con Google Sheets.<br><small>' + (data && data.error ? data.error : 'Intenta recargar') + '</small></p></div>';
-  }
-}
-
-async function loadProperties(clientId) {
-  console.log('loadProperties called with:', clientId);
-  const data = await api('getProperties', { clientId });
-  console.log('loadProperties response:', JSON.stringify(data));
-  if(Array.isArray(data)) {
-    const c = state.clients.find(x=>x.id===clientId);
-    if(c) {
-      c.props = data.map(p => ({
-        id: String(p.id), 
-        url: String(p.url||''), 
-        price: String(p.price||'—'), 
-        addr: String(p.address||p.addr||'—'),
-        rooms: String(p.rooms||''), 
-        m2: String(p.sqm||p.m2||''), 
-        floor: String(p.floor_info||p.floor||''),
-        liked: p.liked === true || p.liked === 'TRUE' || p.liked === 'true',
-        rejected: p.rejected === true || p.rejected === 'TRUE' || p.rejected === 'true',
-        comment: String(p.comment||''),
-        agent_comment: String(p.agent_comment||''),
-        client_comment: String(p.client_comment||''),
-        image_url: String(p.image_url||''),
-        covered: p.covered||'',
-        semicov: p.semicov||'',
-        open_area: p.open_area||'',
-        avg_price: p.avg_price||'',
-        plan_url: p.plan_url||''
-      }));
-      c.props.forEach(p => { if(p.image_url) imageCache[p.id] = p.image_url; });
-    }
-  }
-}
-
-async function loadVisits() {
-  const data = await api('getVisits');
-  if(Array.isArray(data)) {
-    visits = data.map(v => ({
-      id: v.id, date: v.date, time: v.time, addr: v.address,
-      client: v.client_name, url: v.url,
-      lat: parseFloat(v.lat) || -34.59,
-      lng: parseFloat(v.lng) || -58.43
-    }));
-  }
-}
-
-const todayStr = new Date().toISOString().split('T')[0];
-let calYear = new Date().getFullYear();
-let calMonth = new Date().getMonth();
-let selectedDate = todayStr;
-let highlightedVisitId = null;
-
-function getLang() { return LANGS[lang]; }
-function t(k) { return LANGS[lang][k] || k; }
-
-function baseUrl(url) {
-  if(!url) return '';
-  // Remove query params and trailing slashes for comparison
-  try { return url.split('?')[0].split('#')[0].replace(/\/+$/, ''); } catch(e) { return url; }
-}
-
-function calcM2Stats(p) {
-  const covered = parseFloat(p.covered) || 0;
-  const semicov = parseFloat(p.semicov) || 0;
-  const open = parseFloat(p.open_area) || 0;
-  const weighted = covered * 1 + semicov * 0.5 + open * 0.25;
-  // Remove thousand separators (dots in Argentine format) before parsing price
-  const priceStr = String(p.price || '').replace(/[^0-9,.]/g, '').replace(/\.(?=\d{3})/g, '').replace(',', '.');
-  const price = parseFloat(priceStr) || 0;
-  // Use weighted area if available, otherwise fall back to m2 field
-  const m2Fallback = parseFloat(String(p.m2 || '')) || 0;
-  const area = weighted > 0 ? weighted : m2Fallback;
-  const pricePerM2 = (area > 0 && price > 0) ? Math.round(price / area) : null;
-  const avgBarrio = parseFloat(String(p.avg_price || '').replace(/[^0-9.]/g, '')) || null;
-  return { weighted: weighted > 0 ? Math.round(weighted * 10) / 10 : null, pricePerM2, avgBarrio };
-}
-
-function m2StatsHtml(p) {
-  const s = calcM2Stats(p);
-  if(!s.pricePerM2 && !s.avgBarrio) return '';
-  let html = '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px">';
-  if(s.pricePerM2) {
-    const diff = s.avgBarrio ? s.pricePerM2 - s.avgBarrio : null;
-    const color = diff === null ? 'var(--text2)' : diff > 0 ? '#B83232' : '#2E7D32';
-    const arrow = diff === null ? '' : diff > 0 ? ' ↑' : ' ↓';
-    html += '<span style="font-size:11px;padding:3px 8px;border-radius:20px;background:var(--surface2);color:'+color+';border:1px solid var(--border)">USD '+s.pricePerM2.toLocaleString()+'/m² pond.'+arrow+'</span>';
-  }
-  if(s.avgBarrio) {
-    html += '<span style="font-size:11px;padding:3px 8px;border-radius:20px;background:var(--surface2);color:var(--text2);border:1px solid var(--border)">Barrio m² (USD) '+s.avgBarrio.toLocaleString()+'</span>';
-  }
-  html += '</div>';
-  return html;
-}
-
-function getVisitStatus(propUrl) {
-  if(!propUrl || !visits.length) return null;
-  const base = baseUrl(propUrl);
-  const c = state.currentClient ? state.clients.find(x=>x.id===state.currentClient) : null;
-  const clientName = c ? c.name : null;
-  const clientVisits = clientName ? visits.filter(v => v.client === clientName) : visits;
-  const propVisits = clientVisits.filter(v => baseUrl(v.url) === base);
-  if(!propVisits.length) return null;
-  const now = new Date();
-  const visited = propVisits.some(v => {
-    const [y,m,d] = v.date.split('-').map(Number);
-    const [h,min] = (v.time||'00:00').split(':').map(Number);
-    const visitDt = new Date(y, m-1, d, h, min);
-    return visitDt < now;
-  });
-  if(visited) return 'visited';
-  if(propVisits.length) return 'scheduled';
-  return null;
-}
-
-async function geocodeAddress(address) {
+function doPost(e) {
+  // Uploads (JSON body, text/plain) come here; everything else uses URL params
   try {
-    const q = encodeURIComponent(address + ', Buenos Aires, Argentina');
-    const res = await fetch('https://nominatim.openstreetmap.org/search?format=json&q=' + q + '&limit=1', {
-      headers: { 'Accept-Language': 'es' }
-    });
-    const data = await res.json();
-    if(data && data[0]) {
-      return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+    const raw = e && e.postData && e.postData.contents;
+    if (raw && raw.charAt(0) === '{') {
+      const body = JSON.parse(raw);
+      if (body.action === 'uploadPlan') {
+        return respond(uploadPlan(body), '');
+      }
+    }
+  } catch(err) {
+    Logger.log('doPost error: ' + err.toString());
+    return respond({ error: err.toString() }, '');
+  }
+  return handleRequest(e);
+}
+
+function handleRequest(e) {
+  const p = (e && e.parameter) || {};
+  const action = p.action;
+  const callback = p.callback || '';
+
+  try {
+    let result;
+    switch(action) {
+      case 'version':       result = { version: 'plan-v1', drive: typeof DriveApp !== 'undefined' }; break;
+      case 'getClients':    result = getClients(); break;
+      case 'createClient':  result = createClient(p); break;
+      case 'deleteClient':  result = deleteClient(p.id); break;
+      case 'updateClient':  result = updateClient(p); break;
+      case 'getProperties': result = getProperties(p.clientId); break;
+      case 'addProperty':   result = addProperty(p); break;
+      case 'deleteProperty':result = deleteProperty(p.id); break;
+      case 'updateProperty':result = updateProperty(p); break;
+      case 'getVisits':     result = getVisits(p.clientName); break;
+      case 'addVisit':      result = addVisit(p); break;
+      case 'deleteVisit':   result = deleteVisit(p.id); break;
+      case 'updateVisit':   result = updateVisit(p); break;
+      default: result = { error: 'Unknown action: ' + action };
+    }
+    return respond(result, callback);
+  } catch(err) {
+    Logger.log('Error: ' + err.toString());
+    return respond({ error: err.toString() }, callback);
+  }
+}
+
+// Run this ONCE from the editor (select it in the dropdown → Run) to grant Drive access
+function authorizeDrive() {
+  const f = getPlansFolder();
+  Logger.log('Drive OK, folder: ' + f.getName());
+}
+
+function respond(data, callback) {
+  const json = JSON.stringify(data);
+  const output = callback ? callback + '(' + json + ');' : json;
+  const mime = callback ? ContentService.MimeType.JAVASCRIPT : ContentService.MimeType.JSON;
+  return ContentService.createTextOutput(output).setMimeType(mime);
+}
+
+function getSheet(name) {
+  const ss = SpreadsheetApp.openById(SHEET_ID);
+  let sheet = ss.getSheetByName(name);
+  if (!sheet) {
+    sheet = ss.insertSheet(name);
+    if (name === 'Clients')    sheet.appendRow(['id','name','budget','zone','prefs','prop_count','liked_count','created_at']);
+    if (name === 'Properties') sheet.appendRow(['id','client_id','url','price','address','rooms','sqm','floor_info','liked','rejected','comment','agent_comment','client_comment','image_url','covered','semicov','open_area','avg_price','created_at']);
+    if (name === 'Visits')     sheet.appendRow(['id','client_name','date','time','address','url','lat','lng','created_at']);
+  }
+  return sheet;
+}
+
+function sheetToObjects(sheet) {
+  const data = sheet.getDataRange().getValues();
+  if (data.length < 2) return [];
+  const headers = data[0].map(h => String(h).trim());
+  return data.slice(1).map(row => {
+    const obj = {};
+    headers.forEach((h, i) => { obj[h] = row[i]; });
+    return obj;
+  });
+}
+
+// ---- CLIENTS ----
+function getClients() {
+  const clients = sheetToObjects(getSheet('Clients'));
+  const properties = sheetToObjects(getSheet('Properties'));
+  return clients.map(c => ({
+    id: String(c.id),
+    name: String(c.name || ''),
+    budget: String(c.budget || ''),
+    zone: String(c.zone || ''),
+    prefs: String(c.prefs || ''),
+    created_at: String(c.created_at || ''),
+    prop_count: properties.filter(p => String(p.client_id) === String(c.id)).length,
+    liked_count: properties.filter(p => String(p.client_id) === String(c.id) && (p.liked === true || p.liked === 'TRUE')).length,
+  }));
+}
+
+function createClient(p) {
+  const sheet = getSheet('Clients');
+  const id = 'c_' + Date.now();
+  const now = new Date().toISOString();
+  sheet.appendRow([id, p.name || '', p.budget || '', p.zone || '', p.prefs || '', 0, 0, now]);
+  return { id, name: p.name || '', budget: p.budget || '', zone: p.zone||'', prefs: p.prefs||'', prop_count: 0, liked_count: 0, created_at: now };
+}
+
+function deleteClient(id) {
+  // Get client name before deleting
+  const clients = sheetToObjects(getSheet('Clients'));
+  const client = clients.find(c => String(c.id) === String(id));
+  const clientName = client ? String(client.name || '') : '';
+  // Delete client
+  deleteRowById(getSheet('Clients'), id);
+  // Delete all properties
+  const propSheet = getSheet('Properties');
+  const props = sheetToObjects(propSheet);
+  props.filter(p => String(p.client_id) === String(id)).forEach(p => deleteRowById(propSheet, p.id));
+  // Delete all visits by client name
+  if(clientName) {
+    const visitSheet = getSheet('Visits');
+    const visits = sheetToObjects(visitSheet);
+    visits.filter(v => String(v.client_name) === clientName).forEach(v => deleteRowById(visitSheet, v.id));
+  }
+  return { ok: true };
+}
+
+function updateClient(p) {
+  const sheet = getSheet('Clients');
+  const rows = sheet.getDataRange().getValues();
+  const headers = rows[0].map(h => String(h).trim());
+  const idCol = headers.indexOf('id');
+  for (let i = 1; i < rows.length; i++) {
+    if (String(rows[i][idCol]) === String(p.id)) {
+      if(p.name) sheet.getRange(i+1, headers.indexOf('name')+1).setValue(p.name);
+      if(p.budget !== undefined) sheet.getRange(i+1, headers.indexOf('budget')+1).setValue(p.budget);
+      if(p.zone !== undefined) { const col=headers.indexOf('zone'); if(col>=0) sheet.getRange(i+1,col+1).setValue(p.zone); }
+      if(p.prefs !== undefined) { const col=headers.indexOf('prefs'); if(col>=0) sheet.getRange(i+1,col+1).setValue(p.prefs); }
+      return { ok: true };
+    }
+  }
+  return { error: 'Client not found' };
+}
+
+// ---- PROPERTIES ----
+function getProperties(clientId) {
+  if (!clientId) return [];
+  const props = sheetToObjects(getSheet('Properties'));
+  const filtered = props.filter(p => String(p.client_id) === String(clientId));
+  Logger.log('getProperties: clientId=' + clientId + ' total=' + props.length + ' filtered=' + filtered.length);
+  return filtered.map(p => ({
+    id: String(p.id),
+    client_id: String(p.client_id),
+    url: String(p.url || ''),
+    price: String(p.price || ''),
+    address: String(p.address || ''),
+    rooms: String(p.rooms || ''),
+    sqm: String(p.sqm || ''),
+    floor_info: String(p.floor_info || ''),
+    liked: p.liked === true || p.liked === 'TRUE' || p.liked === 'true',
+    rejected: p.rejected === true || p.rejected === 'TRUE' || p.rejected === 'true',
+    comment: String(p.comment || ''),
+    agent_comment: String(p.agent_comment || ''),
+    client_comment: String(p.client_comment || ''),
+    image_url: String(p.image_url || ''),
+    covered: String(p.covered || ''),
+    semicov: String(p.semicov || ''),
+    open_area: String(p.open_area || ''),
+    avg_price: String(p.avg_price || ''),
+    plan_url: String(p.plan_url || ''),
+    created_at: String(p.created_at || '')
+  }));
+}
+
+function addProperty(p) {
+  const sheet = getSheet('Properties');
+  const id = 'p_' + Date.now();
+  const now = new Date().toISOString();
+  sheet.appendRow([id, p.client_id, p.url, p.price || '—', p.address || '—', p.rooms || '', p.sqm || '', p.floor_info || '', false, false, '', '', '', p.image_url||'', p.covered||'', p.semicov||'', p.open_area||'', p.avg_price||'', now]);
+  return { id, client_id: p.client_id, url: p.url, price: p.price || '—', address: p.address || '—', rooms: p.rooms || '', sqm: p.sqm || '', floor_info: p.floor_info || '', liked: false, comment: '', image_url: '', created_at: now };
+}
+
+function deleteProperty(id) {
+  deleteRowById(getSheet('Properties'), id);
+  return { ok: true };
+}
+
+function updateProperty(p) {
+  const sheet = getSheet('Properties');
+  const rows = sheet.getDataRange().getValues();
+  const headers = rows[0].map(h => String(h).trim());
+  const idCol = headers.indexOf('id');
+  for (let i = 1; i < rows.length; i++) {
+    if (String(rows[i][idCol]) === String(p.id)) {
+      const fields = ['url','price','address','rooms','sqm','floor_info','liked','rejected','comment','agent_comment','client_comment','image_url','covered','semicov','open_area','avg_price','plan_url'];
+      fields.forEach(field => {
+        if (p[field] !== undefined) {
+          let col = headers.indexOf(field);
+          if(col < 0 && field === 'plan_url') col = ensureColumn(sheet, 'plan_url');
+          if(col >= 0) {
+            let val = p[field];
+            if(field === 'liked' || field === 'rejected') val = (val === 'true' || val === true);
+            sheet.getRange(i+1, col+1).setValue(val);
+          }
+        }
+      });
+      return { ok: true };
+    }
+  }
+  return { error: 'Property not found: ' + p.id };
+}
+
+// ---- FLOOR PLAN UPLOAD ----
+// Adds a column at the end of the sheet if it does not exist; returns its 0-based index
+function ensureColumn(sheet, name) {
+  const lastCol = sheet.getLastColumn();
+  const headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0].map(h => String(h).trim());
+  let idx = headers.indexOf(name);
+  if (idx >= 0) return idx;
+  sheet.getRange(1, lastCol + 1).setValue(name);
+  return lastCol;
+}
+
+function getPlansFolder() {
+  const it = DriveApp.getFoldersByName('BA Living - Planos');
+  return it.hasNext() ? it.next() : DriveApp.createFolder('BA Living - Planos');
+}
+
+function uploadPlan(body) {
+  if (!body.id || !body.data) return { error: 'Missing id or data' };
+  const mime = body.mime || 'image/jpeg';
+  const ext = mime.indexOf('png') >= 0 ? 'png' : 'jpg';
+  const blob = Utilities.newBlob(Utilities.base64Decode(body.data), mime, 'plano_' + body.id + '_' + Date.now() + '.' + ext);
+  const file = getPlansFolder().createFile(blob);
+  file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+  const url = 'https://drive.google.com/thumbnail?id=' + file.getId() + '&sz=w1600';
+  const res = updateProperty({ id: body.id, plan_url: url });
+  if (res.error) return res;
+  return { ok: true, plan_url: url };
+}
+
+// ---- VISITS ----
+function formatDate(val) {
+  if(!val) return '';
+  if(val instanceof Date) {
+    const y = val.getFullYear();
+    const m = String(val.getMonth()+1).padStart(2,'0');
+    const d = String(val.getDate()).padStart(2,'0');
+    return y+'-'+m+'-'+d;
+  }
+  const s = String(val);
+  // If already YYYY-MM-DD format
+  if(/^\d{4}-\d{2}-\d{2}/.test(s)) return s.substring(0,10);
+  // Try parsing
+  try {
+    const dt = new Date(s);
+    if(!isNaN(dt)) {
+      const y = dt.getFullYear();
+      const m = String(dt.getMonth()+1).padStart(2,'0');
+      const d = String(dt.getDate()).padStart(2,'0');
+      return y+'-'+m+'-'+d;
     }
   } catch(e) {}
-  return null;
+  return s;
 }
 
-function getVisitBadge(propUrl, clientName) {
-  if(!propUrl || !visits.length) return '';
-  const base = baseUrl(propUrl);
-  const clientVisits = clientName ? visits.filter(v => v.client === clientName) : visits;
-  const propVisits = clientVisits.filter(v => baseUrl(v.url) === base);
-  if(!propVisits.length) return '';
-  
-  const today = new Date().toISOString().split('T')[0];
-  const past = propVisits.filter(v => v.date < today);
-  const future = propVisits.filter(v => v.date >= today);
-  
-  if(past.length) {
-    return '<div class="visit-badge visited">✓ Visitada</div>';
-  } else if(future.length) {
-    const next = future.sort((a,b)=>a.date.localeCompare(b.date))[0];
-    const d = next.date.split('-');
-    const dateStr = d[2]+'/'+d[1];
-    return '<div class="visit-badge scheduled">📅 '+dateStr+'</div>';
+function formatTime(val) {
+  if(!val) return '';
+  if(val instanceof Date) {
+    return String(val.getHours()).padStart(2,'0') + ':' + String(val.getMinutes()).padStart(2,'0');
   }
-  return '';
-}
-
-function getInitials(n) { return n.split(' ').slice(0,2).map(w=>w[0]).join('').toUpperCase(); }
-function sourceBadge(url) {
-  if(!url) return '';
-  if(url.includes('zonaprop')) return '<span class="prop-source-badge badge-zonaprop">ZonaProp</span>';
-  if(url.includes('mercadolibre')) return '<span class="prop-source-badge badge-ml">MercadoLibre</span>';
-  return '';
-}
-
-/* ---- LANG ---- */
-function setLang(l) {
-  lang = l;
-  document.querySelectorAll('.lang-btn').forEach(b => b.classList.toggle('active', b.textContent === l.toUpperCase()));
-  applyTranslations();
-  // Only rerender if page is fully loaded
-  if(document.getElementById('client-loading-screen') && document.getElementById('client-loading-screen').style.display !== 'none') return;
-  rerenderCurrent();
-  renderCal();
-}
-
-function applyTranslations() {
-  const set = (id,v) => { const el=document.getElementById(id); if(el) el.textContent=v; };
-  const ph  = (id,v) => { const el=document.getElementById(id); if(el) el.placeholder=v; };
-  const Lx = getLang();
-  set('tab-agent', Lx.tabAgent);
-  set('tab-visits', Lx.tabVisits);
-  set('tab-client', Lx.tabClient);
-  set('lbl-my-clients-title', Lx.myClients);
-  if(document.getElementById('lbl-clients-sub')) set('lbl-clients-sub', Lx.clientsSub(state.clients.length));
-  set('lbl-new-client', Lx.newClient);
-  set('lbl-all-clients', Lx.allClients);
-  set('lbl-copy', Lx.copy);
-  set('lbl-add-prop', Lx.addProp);
-  set('lbl-add-btn', Lx.addBtn);
-  set('lbl-autosave', Lx.autosave);
-  set('lbl-favorites', Lx.favorites);
-  set('modal-title', Lx.modalTitle);
-  set('lbl-name-field', Lx.nameField);
-  set('lbl-budget-field', Lx.budgetField);
-  set('lbl-cancel', Lx.cancel);
-  set('lbl-create', Lx.create);
-  set('pill-all', Lx.all);
-  const pillLiked = document.getElementById('pill-liked');
-  if(pillLiked) pillLiked.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg><span id="lbl-favorites">${Lx.favorites}</span>`;
-  ph('new-url', Lx.urlPh); ph('new-price', Lx.pricePh); ph('new-addr', Lx.addrPh);
-  ph('new-rooms', Lx.roomsPh); ph('new-m2', Lx.m2Ph); ph('new-floor', Lx.floorPh);
-  ph('nc-budget', Lx.budgetPh);
-  set('lbl-visits-title', Lx.visitsTitle);
-  set('lbl-visits-sub', Lx.visitsSub(visits.length));
-  set('lbl-cal-title', Lx.calTitle);
-  set('lbl-route-title', Lx.routeTitle);
-  set('lbl-client-visits-title', Lx.clientVisitsTitle);
-  set('lbl-cal-title-c', Lx.calTitleC);
-  set('lbl-route-title-c', Lx.routeTitleC);
-  set('lbl-add-visit', Lx.addVisit);
-  set('lbl-agent-all', Lx.all||'Todas');
-  set('lbl-agent-liked', Lx.agentLiked||'Favoritos del cliente');
-  set('lbl-v-cancel', Lx.vCancel);
-  set('lbl-v-save', Lx.vSave);
-  ph('f-addr', Lx.fAddrPh); ph('f-client', Lx.fClientPh); ph('f-url', Lx.fUrlPh); ph('new-photo', Lx.fPhotoPh||'URL de foto');
-  const ccEl = document.getElementById('client-count'); if(ccEl) set('client-count-lbl', Lx.heroLbl(parseInt(ccEl.textContent)||0));
-  // Info section translations
-  if(Lx.infoPaymentsTitle) {
-    set('info-payments-title', Lx.infoPaymentsTitle);
-    set('info-agency-fee-title', Lx.infoAgencyFee);
-    set('info-agency-fee-desc', Lx.infoAgencyFeeDesc);
-    set('info-agency-fee-note', Lx.infoAgencyFeeNote);
-    set('info-notary-fee-title', Lx.infoNotaryFee);
-    set('info-notary-fee-desc', Lx.infoNotaryFeeDesc);
-    set('info-total-fee', Lx.infoTotalFee);
-    set('info-stamp-tax-title', Lx.infoStampTax);
-    set('info-stamp-tax-desc', Lx.infoStampTaxDesc);
-    set('info-steps-title', Lx.infoStepsTitle);
-    set('info-steps-footer', Lx.infoStepsFooter);
-    // Re-render steps list
-    const stepsList = document.getElementById('info-steps-list');
-    if(stepsList && Lx.infoSteps) {
-      stepsList.innerHTML = Lx.infoSteps.map(s => 
-        '<div style="display:flex;align-items:flex-start;gap:16px;padding:16px 0;border-bottom:1px solid var(--border)">'
-        + '<div style="width:36px;height:36px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-family:DM Serif Display,serif;font-size:16px;flex-shrink:0">' + (Lx.infoSteps.indexOf(s)+1) + '</div>'
-        + '<div style="flex:1">'
-        + '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:4px">'
-        + '<div style="font-size:15px;font-weight:600;color:var(--text)">' + s.title + '</div>'
-        + '<div style="font-size:12px;padding:2px 10px;border-radius:20px;background:var(--surface2);color:var(--text2);border:1px solid var(--border)">' + s.tag + '</div>'
-        + '</div>'
-        + '<div style="font-size:13px;color:var(--text2)">' + s.desc + '</div>'
-        + '</div></div>'
-      ).join('');
-    }
-  }
-}
-
-/* ---- CALENDAR ---- */
-function prevMonth() { calMonth--; if(calMonth<0){calMonth=11;calYear--;} renderCal(); }
-function nextMonth() { calMonth++; if(calMonth>11){calMonth=0;calYear++;} renderCal(); }
-
-function renderCal() {
-  const Lx = getLang();
-  const cml = document.getElementById('cal-month-lbl'); if(cml) cml.textContent = `${Lx.MONTHS[calMonth]} ${calYear}`;
-  const datesWithVisits = new Set(visits.map(v=>v.date));
-  const first = new Date(calYear, calMonth, 1);
-  const startDow = (first.getDay()+6)%7;
-  const daysInMonth = new Date(calYear, calMonth+1, 0).getDate();
-  const prevDays = new Date(calYear, calMonth, 0).getDate();
-
-  let html = Lx.DAYS.map(d=>`<div class="cal-dow">${d}</div>`).join('');
-  for(let i=0;i<startDow;i++) html+=`<div class="cal-day other">${prevDays-startDow+1+i}</div>`;
-  for(let d=1;d<=daysInMonth;d++){
-    const ds=`${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-    const cls = ['cal-day', ds===todayStr?'today':'', ds===selectedDate?'selected':'', datesWithVisits.has(ds)?'has-visit':''].filter(Boolean).join(' ');
-    html+=`<div class="${cls}" onclick="selectDate('${ds}')">${d}</div>`;
-  }
-  const rem = (startDow+daysInMonth)%7; if(rem) for(let i=1;i<=7-rem;i++) html+=`<div class="cal-day other">${i}</div>`;
-  const cg = document.getElementById('cal-grid'); if(cg) cg.innerHTML = html;
-  renderDayVisits();
-}
-
-function selectDate(d) {
-  selectedDate = d;
-  const [y,m] = d.split('-').map(Number);
-  calYear=y; calMonth=m-1;
-  highlightedVisitId = null;
-  renderCal();
-}
-
-function renderDayVisits() {
-  const dayV = visits.filter(v=>v.date===selectedDate).sort((a,b)=>a.time.localeCompare(b.time));
-  const el = document.getElementById('day-visits');
-  if(!dayV.length){
-    el.innerHTML=`<div class="empty-day"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>${t('noVisits')}</div>`;
-    renderMap([]); return;
-  }
-  el.innerHTML = `<div class="visit-list">${dayV.map((v,i)=>`
-    <div class="visit-item${v.id===highlightedVisitId?' active':''}" onclick="highlightVisit(${v.id})" id="vi-${v.id}">
-      <div class="visit-num">${i+1}</div>
-      <div class="visit-info">
-        <div class="visit-time"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> ${v.time} · ${v.client}</div>
-        <div class="visit-addr">${v.addr}</div>
-        ${v.url?`<a class="visit-link" href="${v.url}" target="_blank"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg> Ver propiedad</a>`:''}
-      </div>
-      <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0">
-        <button onclick="openEditVisit('${v.id}')" style="background:none;border:none;cursor:pointer;color:var(--text3);padding:4px" aria-label="Editar">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-        </button>
-        <button onclick="removeVisit(event,'${v.id}')" style="background:none;border:none;cursor:pointer;color:var(--text3);padding:4px" aria-label="Eliminar">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-        </button>
-      </div>
-    </div>`).join('')}</div>`;
-  renderMap(dayV);
-}
-
-function highlightVisit(id) {
-  highlightedVisitId = id;
-  document.querySelectorAll('.visit-item').forEach(el=>el.classList.remove('active'));
-  const el = document.getElementById('vi-'+id);
-  if(el) el.classList.add('active');
-  const dayV = visits.filter(v=>v.date===selectedDate).sort((a,b)=>a.time.localeCompare(b.time));
-  renderMap(dayV, id);
-}
-
-/* ---- LEAFLET MAPS (OpenStreetMap) ---- */
-let agentMap = null, clientMap = null;
-let agentLayers = [], clientLayers = [];
-
-function getOrCreateLeafletMap(divId, mapRef) {
-  if(typeof L === 'undefined' || typeof L.map !== 'function') {
-    console.log('Leaflet not ready yet');
-    return null;
-  }
-  const el = document.getElementById(divId);
-  if(!el) return null;
-  if(mapRef) return mapRef;
+  const s = String(val);
+  if(/^\d{2}:\d{2}/.test(s)) return s.substring(0,5);
   try {
-    const map = L.map(divId, { zoomControl: true, attributionControl: false }).setView([-34.61, -58.43], 13);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap',
-      maxZoom: 19
-    }).addTo(map);
-    return map;
-  } catch(e) {
-    console.log('Map init error:', e.message);
-    return null;
-  }
+    const dt = new Date(s);
+    if(!isNaN(dt)) return String(dt.getHours()).padStart(2,'0') + ':' + String(dt.getMinutes()).padStart(2,'0');
+  } catch(e) {}
+  return s;
 }
 
-function clearLeafletLayers(map, layers) {
-  layers.forEach(l => { try { map.removeLayer(l); } catch(e){} });
-  return [];
+function getVisits(clientName) {
+  const visits = sheetToObjects(getSheet('Visits'));
+  const filtered = clientName ? visits.filter(v => String(v.client_name) === String(clientName)) : visits;
+  return filtered.map(v => ({
+    id: String(v.id),
+    client_name: String(v.client_name || ''),
+    date: formatDate(v.date),
+    time: formatTime(v.time),
+    address: String(v.address || ''),
+    url: String(v.url || ''),
+    lat: parseFloat(v.lat) || -34.59,
+    lng: parseFloat(v.lng) || -58.43
+  }));
 }
 
-function makeLeafletIcon(num, isHL) {
-  return L.divIcon({
-    className: '',
-    html: `<div style="width:${isHL?32:24}px;height:${isHL?32:24}px;border-radius:50%;background:${isHL?'#1B3A5C':'#fff'};border:2px solid #1B3A5C;display:flex;align-items:center;justify-content:center;font-family:DM Sans,sans-serif;font-size:${isHL?13:11}px;font-weight:600;color:${isHL?'#fff':'#1B3A5C'};box-shadow:0 2px 6px rgba(0,0,0,0.2)">${num}</div>`,
-    iconSize: [isHL?32:24, isHL?32:24],
-    iconAnchor: [isHL?16:12, isHL?16:12],
-    popupAnchor: [0, -16]
-  });
+function addVisit(p) {
+  const sheet = getSheet('Visits');
+  const id = 'v_' + Date.now();
+  const now = new Date().toISOString();
+  const lat = parseFloat(p.lat) || (-34.59 + (Math.random()-0.5)*0.04);
+  const lng = parseFloat(p.lng) || (-58.43 + (Math.random()-0.5)*0.04);
+  sheet.appendRow([id, p.client_name || '', p.date, p.time, p.address, p.url || '', lat, lng, now]);
+  return { id, client_name: p.client_name || '', date: p.date, time: p.time, address: p.address, url: p.url || '', lat, lng };
 }
 
-function renderLeafletMap(mapRef, layersRef, divId, dayV, hlId, isAgent) {
-  const map = getOrCreateLeafletMap(divId, mapRef);
-  if(!map) return { map, layers: layersRef };
-
-  const layers = clearLeafletLayers(map, layersRef);
-  if(!dayV.length) return { map, layers };
-
-  const bounds = [];
-
-  dayV.forEach((v, i) => {
-    const lat = parseFloat(v.lat), lng = parseFloat(v.lng);
-    if(isNaN(lat)||isNaN(lng)) return;
-    bounds.push([lat, lng]);
-    const isHL = v.id === hlId;
-    const marker = L.marker([lat, lng], { icon: makeLeafletIcon(i+1, isHL), zIndexOffset: isHL ? 1000 : 0 });
-    const popupContent = `<div style="font-family:DM Sans,sans-serif;min-width:160px">
-      <strong>${v.time}</strong><br>
-      <span style="font-size:12px">${v.addr}</span>
-      ${isAgent && v.client ? `<br><span style="font-size:11px;color:#6B6459">${v.client}</span>` : ''}
-      ${v.url ? `<br><a href="${v.url}" target="_blank" style="color:#1B3A5C;font-size:12px">Ver propiedad →</a>` : ''}
-    </div>`;
-    marker.bindPopup(popupContent);
-    marker.addTo(map);
-    layers.push(marker);
-  });
-
-  // Draw route line
-  if(dayV.length >= 2) {
-    const coords = dayV.map(v => [parseFloat(v.lat), parseFloat(v.lng)]).filter(c => !isNaN(c[0]));
-    const line = L.polyline(coords, { color: '#1B3A5C', weight: 3, opacity: 0.6, dashArray: '8 4' }).addTo(map);
-    layers.push(line);
-    // Arrows along route
-    coords.forEach((c, i) => {
-      if(i < coords.length - 1) {
-        const mid = [(c[0]+coords[i+1][0])/2, (c[1]+coords[i+1][1])/2];
-        const arrow = L.marker(mid, {
-          icon: L.divIcon({
-            className: '',
-            html: `<div style="color:#1B3A5C;font-size:16px;opacity:0.7">➤</div>`,
-            iconSize: [16,16], iconAnchor: [8,8]
-          })
-        }).addTo(map);
-        layers.push(arrow);
-      }
-    });
-  }
-
-  if(bounds.length) map.fitBounds(bounds, { padding: [30, 30] });
-  setTimeout(() => map.invalidateSize(), 100);
-
-  return { map, layers };
+function deleteVisit(id) {
+  deleteRowById(getSheet('Visits'), id);
+  return { ok: true };
 }
 
-function renderMap(dayV, hlId) {
-  const rc = document.getElementById('route-chips');
-  const result = renderLeafletMap(agentMap, agentLayers, 'lmap-agent', dayV, hlId, true);
-  agentMap = result.map;
-  agentLayers = result.layers;
-
-  if(!dayV.length) { if(rc) rc.innerHTML=''; return; }
-  const Lx = getLang(), dist = dayV.length > 1 ? (dayV.length*1.8).toFixed(1) : '';
-  if(rc) rc.innerHTML = `
-    <span class="route-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>${Lx.visitCount(dayV.length)}</span>
-    ${dist?`<span class="route-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>${Lx.estDist(dist)}</span>`:''}
-    <span class="route-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>${dayV[0].time} – ${dayV[dayV.length-1].time}</span>
-  `;
-}
-
-function toggleVisitForm() {
-  const f = document.getElementById('add-visit-form');
-  f.classList.toggle('open');
-  if(f.classList.contains('open')) {
-    document.getElementById('f-date').value = selectedDate;
-    // Populate client dropdown
-    const sel = document.getElementById('f-client');
-    const current = sel.value;
-    sel.innerHTML = '<option value="">— Seleccionar cliente —</option>';
-    state.clients.forEach(c => {
-      const opt = document.createElement('option');
-      opt.value = c.name;
-      opt.textContent = c.name;
-      if(c.name === current) opt.selected = true;
-      sel.appendChild(opt);
-    });
-    // Pre-select if currently viewing a client
-    if(state.currentClient) {
-      const c = state.clients.find(x=>x.id===state.currentClient);
-      if(c) sel.value = c.name;
-    }
-  }
-}
-
-async function saveVisit() {
-  const date=document.getElementById('f-date').value;
-  const time=document.getElementById('f-time').value;
-  const address=document.getElementById('f-addr').value.trim();
-  const client_name=document.getElementById('f-client').value.trim();
-  const url=document.getElementById('f-url').value.trim();
-  if(!address||!date) return;
-  showSpinner(true);
-  // Geocode address first
-  const coords = await geocodeAddress(address);
-  const lat = coords ? coords.lat : -34.61;
-  const lng = coords ? coords.lng : -58.43;
-  const data = await api('addVisit', { date, time, address, client_name, url, lat, lng });
-  showSpinner(false);
-  if(data.id) {
-    visits.push({ id:data.id, date, time, addr:address, client:client_name, url, lat, lng });
-    document.getElementById('f-addr').value='';
-    document.getElementById('f-client').value='';
-    document.getElementById('f-url').value='';
-    toggleVisitForm();
-    applyTranslations();
-    selectDate(date);
-  }
-}
-
-async function removeVisit(e, id) {
-  e.stopPropagation();
-  showSpinner(true);
-  await api('deleteVisit', { id });
-  showSpinner(false);
-  visits = visits.filter(v=>v.id!==id);
-  applyTranslations();
-  renderDayVisits();
-}
-
-/* ---- CATALOG ---- */
-let clientFilter = 'new';
-let agentSectionFilter = 'new';
-
-function renderClientSections(props, containerId, isAgent) {
-  const gridId = containerId || 'client-props-grid';
-  const agent = isAgent || false;
-  const g = document.getElementById(gridId);
-  if(!g) return;
-  g.style.display = 'block';
-
-  const currentFilter = agent ? agentSectionFilter : clientFilter;
-
-  let filtered;
-  if(currentFilter === 'new') filtered = props.filter(p => !p.liked && !p.rejected);
-  else if(currentFilter === 'liked') filtered = props.filter(p => p.liked && !p.rejected);
-  else if(currentFilter === 'rejected') filtered = props.filter(p => p.rejected);
-  else filtered = props; // 'all'
-
-  let html = '';
-  if(filtered.length) {
-    html = '<div class="props-grid">'+filtered.map(p=>propCardHtml(p,agent)).join('')+'</div>';
-  } else if(!props.length) {
-    html = '<div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg><p>'+t('noProps')+'</p></div>';
-  } else {
-    html = '<div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg><p>No hay propiedades en esta categoría.</p></div>';
-  }
-
-  g.innerHTML = html;
-  // Update pill counts
-  updateFilterCounts(props, agent);
-}
-
-function updateFilterCounts(props, isAgent) {
-  const newCount = props.filter(p => !p.liked && !p.rejected).length;
-  const likedCount = props.filter(p => p.liked && !p.rejected).length;
-  const rejectedCount = props.filter(p => p.rejected).length;
-  const prefix = isAgent ? 'agent' : 'c';
-  const setCount = (id, count, label) => {
-    const el = document.getElementById(id);
-    if(el) el.innerHTML = label + (count > 0 ? ' <span style="background:rgba(0,0,0,0.08);border-radius:20px;padding:1px 7px;font-size:11px">'+count+'</span>' : '');
-  };
-  if(isAgent) {
-    setCount('agent-pill-new', newCount, '✨ Nuevas');
-    setCount('agent-pill-liked', likedCount, '❤️ Me gusta');
-    setCount('agent-pill-rejected', rejectedCount, '✕ No encaja');
-  } else {
-    setCount('cpill-new', newCount, '✨ Nuevas');
-    setCount('cpill-liked', likedCount, '❤️ Me gusta');
-    setCount('cpill-rejected', rejectedCount, '✕ No encaja');
-  }
-}
-
-function setClientFilter(f, el) {
-  clientFilter = f;
-  document.querySelectorAll('#client-filter-bar .pill').forEach(p => p.classList.remove('active'));
-  el.classList.add('active');
-  const c = state.currentClient ? state.clients.find(x=>x.id===state.currentClient) : state.clients[0];
-  if(c) renderClientSections(c.props, 'client-props-grid', false);
-}
-
-function propCardHtml(p, isAgent, clientName) {
-  const _clientName = clientName || (state.currentClient ? state.clients.find(x=>x.id===state.currentClient)?.name : null);
-  const imgHtml = p.image_url ? '<img src="'+p.image_url+'" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover" onerror="this.style.display=\'none\'">' : '';
-  const badge = sourceBadge(p.url);
-  const likedClass = p.liked ? 'liked' : '';
-  const rejectedClass = p.rejected ? 'rejected' : '';
-  const agentCommentHtml = ''; // shown inside commentHtml instead
-  const roomsChip = p.rooms ? '<span class="chip">'+p.rooms+'</span>' : '';
-  const m2Chip = p.m2 ? '<span class="chip">'+p.m2+'</span>' : '';
-  const floorChip = p.floor ? '<span class="chip">'+p.floor+'</span>' : '';
-  const urlLink = p.url ? '<a class="visit-link" href="'+p.url+'" target="_blank">Ver propiedad</a>' : '';
-  
-  let actionsHtml = '<a href="'+p.url+'" target="_blank" class="btn btn-sm">'+t('viewPortal')+'</a>';
-  if(p.plan_url) actionsHtml += '<button class="btn btn-sm" onclick="openPlan(\''+p.id+'\')">'+t('planBtn')+'</button>';
-  
-  if(isAgent) {
-    if(p.liked) {
-      const _vs = getVisitStatus(p.url);
-      if(_vs === 'visited') {
-        actionsHtml += '<button class="btn btn-sm" style="background:#E6F4EA;color:#2E7D32;border-color:#C8E6C9;cursor:default">✓ Visto</button>';
-      } else if(_vs === 'scheduled') {
-        actionsHtml += '<button class="btn btn-sm" onclick="scheduleVisitFromProp(\''+p.id+'\')" style="background:#E8F4FD;color:#0066CC;border-color:#B3D9F7">📅 Agendado</button>';
-      } else {
-        actionsHtml += '<button class="btn btn-sm" onclick="scheduleVisitFromProp(\''+p.id+'\')" style="background:var(--accent-light);color:var(--accent-text);border-color:var(--accent-light)">Agendar visita</button>';
-      }
-    }
-    actionsHtml += '<button class="btn btn-sm btn-ghost" onclick="openCopyProp(\''+p.id+'\')" title="Copiar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>';
-    actionsHtml += '<button class="btn btn-sm btn-ghost" onclick="openEditProp(\''+p.id+'\')">✏️</button>';
-    actionsHtml += '<button class="btn btn-sm btn-danger-ghost" onclick="removeProp(\''+p.id+'\')">🗑</button>';
-  }
-
-
-  let commentHtml = '';
-  if(isAgent) {
-    commentHtml = '<div style="display:flex;flex-direction:column;gap:8px;margin-top:6px">';
-    commentHtml += '<div><div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px">🔒 Nota interna</div>';
-    commentHtml += '<textarea class="prop-comment" style="min-height:52px" placeholder="Solo la ves vos..." onblur="saveAgentComment(\''+p.id+'\',this.value)">'+( p.comment||'')+'</textarea></div>';
-    commentHtml += '<div><div style="font-size:11px;font-weight:600;color:var(--accent);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px">💬 Comentario para el cliente</div>';
-    commentHtml += '<textarea class="prop-comment" style="min-height:52px;border-color:var(--accent-light)" placeholder="El cliente verá esto..." onblur="saveAgentForClient(\''+p.id+'\',this.value)">'+(p.agent_comment||'')+'</textarea></div>';
-    if(p.client_comment) {
-      commentHtml += '<div><div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px">⭐ Comentario del cliente</div>';
-      commentHtml += '<div style="font-size:13px;padding:8px 10px;background:var(--accent-light);border-radius:var(--radius-sm);color:var(--accent-text);border-left:3px solid var(--accent)">'+p.client_comment+'</div></div>';
-    }
-    commentHtml += '</div>';
-  } else {
-    commentHtml = '<div style="margin-top:6px">';
-    // Visit status badge for client
-    const _cvs = getVisitStatus(p.url);
-    if(_cvs === 'visited') {
-      commentHtml += '<div style="display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:4px 10px;border-radius:20px;background:#E6F4EA;color:#2E7D32;margin-bottom:8px">✓ Visto</div>';
-    } else if(_cvs === 'scheduled') {
-      commentHtml += '<div style="display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:4px 10px;border-radius:20px;background:#E8F4FD;color:#0066CC;margin-bottom:8px">📅 Visita agendada</div>';
-    }
-    if(p.agent_comment) {
-      commentHtml += '<div style="font-size:11px;font-weight:600;color:var(--accent);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px">Nota del agente</div>';
-      commentHtml += '<div style="font-size:13px;padding:8px 10px;background:var(--accent-light);border-radius:var(--radius-sm);color:var(--accent-text);border-left:3px solid var(--accent);margin-bottom:8px">'+p.agent_comment+'</div>';
-    }
-    commentHtml += '<div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px">Mi comentario</div>';
-    commentHtml += '<textarea class="prop-comment" style="min-height:52px" placeholder="'+t('commentPh')+'" onblur="saveClientComment(\''+p.id+'\',this.value)">'+(p.client_comment||'')+'</textarea>';
-    commentHtml += '</div>';
-  }
-
-  return '<div class="prop-card" id="card-'+p.id+'">'
-    + '<div class="prop-thumb">'
-    + '<div class="prop-thumb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>'
-    + imgHtml + badge
-    + '<button class="btn-reject '+rejectedClass+'" onclick="toggleReject(\''+p.id+'\')">✕</button>'
-    + '<div class="fav-btn '+likedClass+'" onclick="toggleLike(\''+p.id+'\')"><svg viewBox="0 0 24 24" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></div>'
-    + '</div>'
-    + '<div class="prop-body">'
-    + '<div class="prop-price">'+p.price+'</div>'
-    + '<div class="prop-addr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>'+p.addr+'</div>'
-    + '<div class="chips">'+roomsChip+m2Chip+floorChip+'</div>'
-    + m2StatsHtml(p)
-    + agentCommentHtml
-    + '<div class="prop-actions">'+actionsHtml+'</div>'
-    + commentHtml
-    + '<div class="saved-msg" id="saved-'+p.id+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 12 4 12"/></svg>'+t('saved')+'</div>'
-    + '</div></div>';
-}
-
-
-function renderClientsGrid() {
-  const subEl = document.getElementById('lbl-clients-sub'); if(subEl) subEl.textContent = getLang().clientsSub(state.clients.length);
-  const g = document.getElementById('clients-grid');
-  if(!state.clients.length){
-    g.innerHTML=`<div class="empty" style="grid-column:1/-1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg><p>${t('noClients')}</p></div>`; return;
-  }
-  g.innerHTML = state.clients.map(c=>{
-    const props=c.props||[]; const liked=props.filter(p=>p.liked).length, commented=props.filter(p=>p.comment).length;
-    return `<div class="client-card" onclick="openClient('${c.id}')">
-      <div class="client-top"><div class="avatar">${getInitials(c.name)}</div><div><div class="client-name">${c.name}</div><div class="client-budget">${c.budget}</div></div></div>
-      <div class="client-footer">
-        <span class="stat-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>${getLang().propCount(c.props.length)}</span>
-        ${liked?`<span class="stat-chip liked"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>${liked}</span>`:''}
-        ${commented?`<span class="stat-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>${commented}</span>`:''}
-      </div></div>`;
-  }).join('');
-}
-
-
-/* ---- OG IMAGE FETCH ---- */
-const imageCache = {};
-
-async function fetchOgImage(url, propId) {
-  if(imageCache[propId]) return imageCache[propId];
-  try {
-    // Use allorigins which returns JSON with contents field
-    const proxyUrl = 'https://api.allorigins.win/get?url=' + encodeURIComponent(url);
-    const res = await fetch(proxyUrl, { signal: AbortSignal.timeout(12000) });
-    if(!res.ok) throw new Error('proxy ' + res.status);
-    const json = await res.json();
-    const html = json.contents || '';
-    if(!html) throw new Error('empty response');
-    
-    const patterns = [
-      /<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i,
-      /<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i,
-      /<meta[^>]+name=["']twitter:image["'][^>]+content=["']([^"']+)["']/i,
-      /<meta[^>]+content=["']([^"']+)["'][^>]+name=["']twitter:image["']/i,
-      /<meta[^>]+property=["']og:image:url["'][^>]+content=["']([^"']+)["']/i,
-    ];
-    
-    for(const pattern of patterns) {
-      const match = html.match(pattern);
-      if(match && match[1]) {
-        let imgUrl = match[1].replace(/&amp;/g,'&').replace(/&#x3A;/g,':').trim();
-        if(imgUrl.startsWith('//')) imgUrl = 'https:' + imgUrl;
-        if(imgUrl.startsWith('http')) {
-          imageCache[propId] = imgUrl;
-          return imgUrl;
-        }
-      }
-    }
-  } catch(e) { /* silent */ }
-  return null;
-}
-
-function showPropImage(propId, imgUrl) {
-  const el = document.getElementById('thumb-img-' + propId);
-  const loader = document.getElementById('thumb-load-' + propId);
-  if(el && imgUrl) {
-    el.onload = () => { el.style.display='block'; if(loader) loader.style.display='none'; };
-    el.onerror = () => { el.style.display='none'; if(loader) loader.style.display='none'; };
-    el.src = imgUrl;
-  } else {
-    if(loader) loader.style.display='none';
-  }
-}
-
-async function loadPropImages(props) {
-  props.forEach(p => {
-    // Use saved image_url first (from Sheets)
-    if(p.image_url) {
-      imageCache[p.id] = p.image_url;
-      showPropImage(p.id, p.image_url);
-      return;
-    }
-    // Use cache if available
-    if(imageCache[p.id]) {
-      showPropImage(p.id, imageCache[p.id]);
-      return;
-    }
-    // Hide loader if no image
-    const loader = document.getElementById('thumb-load-' + p.id);
-    if(loader) loader.style.display='none';
-  });
-
-  // Try to fetch missing images in background (agent only)
-  const missing = props.filter(p => !p.image_url && !imageCache[p.id]);
-  if(missing.length > 0) {
-    missing.forEach(async p => {
-      const imgUrl = await fetchOgImage(p.url, p.id);
-      if(imgUrl) {
-        showPropImage(p.id, imgUrl);
-        // Save to sheets
-        api('updateProperty', { id: p.id, image_url: imgUrl });
-      }
-    });
-  }
-}
-
-function renderPropsGrid(containerId, props, isAgent) {
-  const g = document.getElementById(containerId); if(!g) return;
-  const filterToUse = isAgent ? agentFilter : state.filter;
-  const filtered = filterToUse==='liked' ? props.filter(p=>p.liked) : props;
-  if(!filtered.length){ g.innerHTML=`<div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg><p>${t('noProps')}</p></div>`; return; }
-  const propsToRender = filtered;
-  g.innerHTML = propsToRender.map(p=>`
-    <div class="prop-card" id="card-${p.id}">
-      <div class="prop-thumb">
-        <div class="prop-thumb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>
-        ${p.image_url ? `<img src="${p.image_url}" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover" onerror="this.style.display='none'">` : ''}
-        ${sourceBadge(p.url)}
-        <button class="btn-reject ${p.rejected?'rejected':''}" onclick="toggleReject('${p.id}')">✕</button>
-        ${getVisitBadge(p.url, _clientName)}
-        <div class="fav-btn ${p.liked?'liked':''}" onclick="toggleLike('${p.id}')">
-          <svg viewBox="0 0 24 24" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-        </div>
-      </div>
-      <div class="prop-body">
-        <div class="prop-price">${p.price}</div>
-        <div class="prop-addr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>${p.addr}</div>
-        <div class="chips">
-          ${p.rooms?`<span class="chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>${p.rooms}</span>`:''}
-          ${p.m2?`<span class="chip">${p.m2}</span>`:''}
-          ${p.floor?`<span class="chip">${p.floor}</span>`:''}
-        </div>
-        ${m2StatsHtml(p)}
-        <div class="prop-actions">
-          <a href="${p.url}" target="_blank" class="btn btn-sm"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>${t('viewPortal')}</a>
-          ${isAgent && p.liked ? (getVisitStatus(p.url)==='visited' ? '<button class="btn btn-sm" style="background:#E6F4EA;color:#2E7D32;border-color:#C8E6C9;cursor:default">✓ Visto</button>' : getVisitStatus(p.url)==='scheduled' ? `<button class="btn btn-sm" onclick="scheduleVisitFromProp('${p.id}')" style="background:#E8F4FD;color:#0066CC;border-color:#B3D9F7">📅 Agendado</button>` : `<button class="btn btn-sm" onclick="scheduleVisitFromProp('${p.id}')" style="background:var(--accent-light);color:var(--accent-text);border-color:var(--accent-light)">Agendar visita</button>`) : ''}
-          ${isAgent?`<button class="btn btn-sm btn-ghost" onclick="openCopyProp('${p.id}')" title="Copiar a otro cliente"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button><button class="btn btn-sm btn-ghost" onclick="openEditProp('${p.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button><button class="btn btn-sm btn-danger-ghost" onclick="removeProp('${p.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></button>`:''}
-        </div>
-        ${isAgent ? `
-          <div style="display:flex;flex-direction:column;gap:8px;margin-top:6px">
-            <div>
-              <div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px">🔒 Nota interna</div>
-              <textarea class="prop-comment" style="min-height:52px" placeholder="Solo la ves vos..." onblur="saveAgentComment('${p.id}',this.value)">${p.comment||''}</textarea>
-            </div>
-            <div>
-              <div style="font-size:11px;font-weight:600;color:var(--accent);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px">💬 Comentario para el cliente</div>
-              <textarea class="prop-comment" style="min-height:52px;border-color:var(--accent-light)" placeholder="El cliente verá esto..." onblur="saveAgentForClient('${p.id}',this.value)">${p.agent_comment||''}</textarea>
-            </div>
-            ${p.client_comment ? `
-            <div>
-              <div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px">⭐ Comentario del cliente</div>
-              <div style="font-size:13px;padding:8px 10px;background:var(--accent-light);border-radius:var(--radius-sm);color:var(--accent-text);border-left:3px solid var(--accent)">${p.client_comment}</div>
-            </div>` : ''}
-          </div>
-        ` : `
-          <div style="margin-top:6px">
-            ${p.agent_comment ? `
-            <div style="font-size:11px;font-weight:600;color:var(--accent);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px">Nota del agente</div>
-            <div style="font-size:13px;padding:8px 10px;background:var(--accent-light);border-radius:var(--radius-sm);color:var(--accent-text);border-left:3px solid var(--accent);margin-bottom:8px">${p.agent_comment}</div>
-            ` : ''}
-            <div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px">Mi comentario</div>
-            <textarea class="prop-comment" style="min-height:52px" placeholder="${t('commentPh')}" onblur="saveClientComment('${p.id}',this.value)">${p.client_comment||''}</textarea>
-          </div>
-        `}
-        <div class="saved-msg" id="saved-${p.id}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 12 4 12"/></svg>${t('saved')}</div>
-      </div>
-    </div>`).join('');
-
-}
-
-async function openClient(id) {
-  state.currentClient = id;
-  const c = state.clients.find(x=>x.id===id);
-  document.getElementById('clients-list-view').style.display='none';
-  document.getElementById('client-detail-view').style.display='block';
-  document.getElementById('detail-avatar').textContent=getInitials(c.name);
-  document.getElementById('detail-name').textContent=c.name;
-  renderClientBudge(c);
-  const siteUrl = window.location.origin + window.location.pathname;
-  document.getElementById('detail-link').textContent=`${siteUrl}?client=${c.id}`;
-  showSpinner(true);
-  await loadProperties(id);
-  showSpinner(false);
-  renderClientSections(c.props, 'detail-props-grid', true);
-  syncClientView(c);
-  // Re-render to show visit status (visits already loaded)
-  if(visits.length) renderClientSections(c.props, 'detail-props-grid', true);
-}
-function renderClientBudge(c) {
-  const wrap = document.getElementById('detail-budget-wrap');
-  if(!wrap) return;
-  const items = [
-    { icon: '💰', label: c.budget, show: !!c.budget },
-    { icon: '📍', label: c.zone, show: !!c.zone },
-    { icon: '✨', label: c.prefs, show: !!c.prefs },
-    // fallback for old clients with single budget field
-    { icon: '📋', label: c.budget, show: !c.zone && !c.prefs && !!c.budget },
-  ];
-  const filtered = items.filter(x => x.show).slice(0, c.zone || c.prefs ? 3 : 1);
-  wrap.innerHTML = filtered.map(x =>
-    `<div style="font-size:13px;color:var(--text2);display:flex;align-items:flex-start;gap:5px"><span>${x.icon}</span><span>${x.label}</span></div>`
-  ).join('');
-}
-
-function showClientsList() {
-  state.currentClient=null;
-  document.getElementById('client-detail-view').style.display='none';
-  document.getElementById('clients-list-view').style.display='block';
-  renderClientsGrid();
-}
-function hideLoadingScreen() {
-  const view = document.getElementById('view-client');
-  if(view) { view.style.opacity = '1'; view.style.transition = 'opacity 0.3s'; }
-}
-
-function syncClientView(c) {
-  const Lx=getLang();
-  document.getElementById('client-hero-title').textContent=Lx.heroTitle(c.name);
-  document.getElementById('client-hero-sub').textContent=Lx.heroSub;
-  document.getElementById('client-count').textContent=c.props.length;
-  document.getElementById('client-count-lbl').textContent=Lx.heroLbl(c.props.length);
-  document.getElementById('autosave-note').style.display='flex';
-
-  // Show client description chips
-  const chipsEl = document.getElementById('client-hero-chips');
-  if(chipsEl) {
-    const chips = [
-      { icon: '💰', val: c.budget },
-      { icon: '📍', val: c.zone },
-      { icon: '✨', val: c.prefs },
-    ].filter(x => x.val);
-    chipsEl.innerHTML = chips.map(x =>
-      `<span style="display:inline-flex;align-items:center;gap:5px;font-size:12px;padding:4px 10px;border-radius:20px;background:rgba(255,255,255,0.15);color:#fff;border:1px solid rgba(255,255,255,0.25)">${x.icon} ${x.val}</span>`
-    ).join('');
-  }
-
-  renderClientSections(c.props);
-  hideLoadingScreen();
-
-  const clientVisitsCount = visits.filter(v=>v.client===c.name).length;
-  const visSection = document.getElementById('client-visits-section');
-  if(visSection) visSection.style.display = clientVisitsCount ? 'block' : 'none';
-  const infoSection = document.getElementById('client-info-section');
-  if(infoSection) infoSection.style.display = 'block';
-  renderCalC(c.name);
-}
-function rerenderCurrent() {
-  const av = document.querySelector('.view.active');
-  const isClientMode = av && av.id === 'view-client';
-
-  if(isClientMode) {
-    // Client view - only render client grid
-    const c = state.currentClient ? state.clients.find(x=>x.id===state.currentClient) : state.clients[0];
-    if(c) syncClientView(c);
-  } else {
-    // Agent view
-    if(state.currentClient) {
-      const c = state.clients.find(x=>x.id===state.currentClient);
-      if(c) renderClientSections(c.props, 'detail-props-grid', true);
-    } else {
-      renderClientsGrid();
-    }
-  }
-}
-function switchTab(tab) {
-  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
-  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
-  document.getElementById('tab-'+tab).classList.add('active');
-  document.getElementById('view-'+tab).classList.add('active');
-  if(tab==='client'){ const c=state.currentClient?state.clients.find(x=>x.id===state.currentClient):state.clients[0]; if(c)syncClientView(c); }
-  if(tab==='visits') renderCal();
-}
-function openNewClient() { document.getElementById('new-client-modal').classList.add('open'); }
-function closeModal() { document.getElementById('new-client-modal').classList.remove('open'); }
-document.getElementById('new-client-modal').addEventListener('click', function(e){ if(e.target===this) closeModal(); });
-async function createClient() {
-  const name = document.getElementById('nc-name').value.trim();
-  const budget = document.getElementById('nc-budget').value.trim();
-  const zone = document.getElementById('nc-zone').value.trim();
-  const prefs = document.getElementById('nc-prefs').value.trim();
-  if(!name) return;
-  showSpinner(true);
-  const data = await api('createClient', { name, budget, zone, prefs });
-  showSpinner(false);
-  if(data.id) {
-    state.clients.unshift({ ...data, props: [] });
-    closeModal();
-    document.getElementById('nc-name').value='';
-    document.getElementById('nc-budget').value='';
-    document.getElementById('nc-zone').value='';
-    document.getElementById('nc-prefs').value='';
-    renderClientsGrid(); openClient(data.id);
-  }
-}
-async function addProperty() {
-  const url=document.getElementById('new-url').value.trim(); if(!url) return;
-  const c=state.clients.find(x=>x.id===state.currentClient);
-  const photoUrl = document.getElementById('new-photo').value.trim();
-  const propData = {
-    client_id: state.currentClient, url,
-    price: document.getElementById('new-price').value.trim()||'—',
-    address: document.getElementById('new-addr').value.trim()||'—',
-    rooms: document.getElementById('new-rooms').value.trim(),
-    sqm: document.getElementById('new-m2').value.trim(),
-    floor_info: document.getElementById('new-floor').value.trim(),
-    covered: document.getElementById('new-covered').value.trim(),
-    semicov: document.getElementById('new-semicov').value.trim(),
-    open_area: document.getElementById('new-open').value.trim(),
-    avg_price: document.getElementById('new-avg-price').value.trim(),
-    image_url: photoUrl
-  };
-  showSpinner(true);
-  const data = await api('addProperty', propData);
-  showSpinner(false);
-  if(data.id) {
-    const newProp = {id:data.id,url,price:propData.price,addr:propData.address,rooms:propData.rooms,m2:propData.sqm,floor:propData.floor_info,liked:false,comment:'',agent_comment:'',client_comment:'',image_url:photoUrl,rejected:false,covered:propData.covered||'',semicov:propData.semicov||'',open_area:propData.open_area||'',avg_price:propData.avg_price||''};
-    c.props.push(newProp);
-    if(photoUrl) imageCache[data.id] = photoUrl;
-    ['new-url','new-price','new-addr','new-rooms','new-m2','new-floor','new-photo','new-covered','new-semicov','new-open','new-avg-price'].forEach(id=>{document.getElementById(id).value='';});
-    renderClientSections(c.props,'detail-props-grid',true); syncClientView(c);
-    c.prop_count = c.props.length;
-    // Save photo via updateProperty to ensure it's stored
-    if(photoUrl) {
-      api('updateProperty', { id: data.id, image_url: photoUrl });
-    } else {
-      // Try auto-fetch image in background
-      fetchOgImage(url, data.id).then(imgUrl => {
-        if(imgUrl) {
-          imageCache[data.id] = imgUrl;
-          api('updateProperty', { id: data.id, image_url: imgUrl });
+function updateVisit(p) {
+  const sheet = getSheet('Visits');
+  const rows = sheet.getDataRange().getValues();
+  const headers = rows[0].map(h => String(h).trim());
+  const idCol = headers.indexOf('id');
+  for (let i = 1; i < rows.length; i++) {
+    if (String(rows[i][idCol]) === String(p.id)) {
+      const fields = ['client_name','date','time','address','url'];
+      fields.forEach(field => {
+        if(p[field] !== undefined) {
+          const col = headers.indexOf(field);
+          if(col >= 0) sheet.getRange(i+1, col+1).setValue(p[field]);
         }
       });
+      return { ok: true };
     }
   }
-}
-async function removeProp(pid) {
-  if(!confirm('¿Eliminar esta propiedad?')) return;
-  showSpinner(true);
-  await api('deleteProperty', { id: pid });
-  showSpinner(false);
-  const c=state.clients.find(x=>x.id===state.currentClient);
-  c.props=c.props.filter(p=>p.id!==pid);
-  renderClientSections(c.props, 'detail-props-grid', true); syncClientView(c);
-}
-async function toggleReject(pid) {
-  const c = state.currentClient ? state.clients.find(x=>x.id===state.currentClient) : state.clients[0];
-  const p = c && c.props.find(x=>x.id===pid); if(!p) return;
-  p.rejected = !p.rejected;
-  if(p.rejected) p.liked = false; // can't be liked and rejected
-  await api('updateProperty', { id: pid, rejected: p.rejected });
-  const c2 = state.currentClient ? state.clients.find(x=>x.id===state.currentClient) : state.clients[0];
-  const av2 = document.querySelector('.view.active');
-  const isAgentView = av2 && av2.id !== 'view-client';
-  if(c2) renderClientSections(c2.props, isAgentView ? 'detail-props-grid' : 'client-props-grid', isAgentView);
+  return { error: 'Visit not found' };
 }
 
-async function toggleLike(pid) {
-  const c=state.currentClient?state.clients.find(x=>x.id===state.currentClient):state.clients[0];
-  const p=c.props.find(x=>x.id===pid); if(!p) return;
-  p.liked=!p.liked;
-  const btn=document.querySelector(`#card-${pid} .fav-btn`); if(btn) btn.classList.toggle('liked');
-  await api('updateProperty', { id: pid, liked: p.liked });
-  // Re-render sections if in client view
-  const av = document.querySelector('.view.active');
-  if(av && av.id === 'view-client') {
-    const c2 = state.currentClient ? state.clients.find(x=>x.id===state.currentClient) : state.clients[0];
-    const av3 = document.querySelector('.view.active');
-    const isAgView = av3 && av3.id !== 'view-client';
-    if(c2) renderClientSections(c2.props, isAgView ? 'detail-props-grid' : 'client-props-grid', isAgView);
-  }
-}
-async function saveComment(pid,val) {
-  await saveAgentComment(pid,val);
-}
-
-async function saveAgentComment(pid,val) {
-  const c=state.currentClient?state.clients.find(x=>x.id===state.currentClient):state.clients[0];
-  const p=c&&c.props.find(x=>x.id===pid); if(!p) return;
-  p.comment=val;
-  await api('updateProperty', { id: pid, comment: val });
-  const saved=document.getElementById('saved-'+pid);
-  if(saved){saved.style.display='flex'; setTimeout(()=>{saved.style.display='none';},2000);}
-}
-
-async function saveAgentForClient(pid,val) {
-  const c=state.currentClient?state.clients.find(x=>x.id===state.currentClient):state.clients[0];
-  const p=c&&c.props.find(x=>x.id===pid); if(!p) return;
-  p.agent_comment=val;
-  await api('updateProperty', { id: pid, agent_comment: val });
-  const saved=document.getElementById('saved-'+pid);
-  if(saved){saved.style.display='flex'; setTimeout(()=>{saved.style.display='none';},2000);}
-}
-
-async function saveClientComment(pid,val) {
-  const c=state.currentClient?state.clients.find(x=>x.id===state.currentClient):state.clients[0];
-  const p=c&&c.props.find(x=>x.id===pid); if(!p) return;
-  p.client_comment=val;
-  await api('updateProperty', { id: pid, client_comment: val });
-  const saved=document.getElementById('saved-'+pid);
-  if(saved){saved.style.display='flex'; setTimeout(()=>{saved.style.display='none';},2000);}
-}
-let agentFilter = 'all';
-
-function setAgentFilter(f, el) {
-  agentFilter = f;
-  agentSectionFilter = f;
-  document.querySelectorAll('#agent-filter-bar .pill').forEach(p => p.classList.remove('active'));
-  el.classList.add('active');
-  const c = state.currentClient ? state.clients.find(x=>x.id===state.currentClient) : null;
-  if(c) renderClientSections(c.props, 'detail-props-grid', true);
-}
-
-function setFilter(f,el) {
-  state.filter=f;
-  document.querySelectorAll('.filter-pills .pill').forEach(p=>p.classList.remove('active')); el.classList.add('active');
-  const c=state.currentClient?state.clients.find(x=>x.id===state.currentClient):state.clients[0];
-  if(c) renderClientSections(c.props, 'client-props-grid', false);
-}
-function copyLink() {
-  const txt=document.getElementById('detail-link').textContent;
-  navigator.clipboard&&navigator.clipboard.writeText(txt);
-  const lbl=document.getElementById('lbl-copy'); if(lbl){lbl.textContent=t('copied'); setTimeout(()=>{lbl.textContent=t('copy');},2000);}
-}
-
-
-
-
-
-
-
-/* ---- COPY PROPERTY ---- */
-let copyingPropId = null;
-
-function openCopyProp(pid) {
-  const c = state.currentClient ? state.clients.find(x=>x.id===state.currentClient) : null;
-  const p = c && c.props.find(x=>x.id===pid);
-  if(!p) return;
-  copyingPropId = pid;
-
-  const info = document.getElementById('copy-prop-info');
-  if(info) info.innerHTML = '<strong>'+p.price+'</strong> · '+p.addr+(p.rooms?' · '+p.rooms:'');
-
-  const sel = document.getElementById('copy-prop-client');
-  sel.innerHTML = '<option value="">— Elegir cliente —</option>';
-  state.clients.filter(x=>x.id!==state.currentClient).forEach(cl => {
-    const opt = document.createElement('option');
-    opt.value = cl.id;
-    opt.textContent = cl.name;
-    sel.appendChild(opt);
-  });
-
-  document.getElementById('copy-prop-modal').classList.add('open');
-}
-
-function closeCopyProp() {
-  document.getElementById('copy-prop-modal').classList.remove('open');
-  copyingPropId = null;
-}
-
-async function confirmCopyProp() {
-  const targetClientId = document.getElementById('copy-prop-client').value;
-  if(!targetClientId || !copyingPropId) return;
-
-  const srcClient = state.currentClient ? state.clients.find(x=>x.id===state.currentClient) : null;
-  const p = srcClient && srcClient.props.find(x=>x.id===copyingPropId);
-  if(!p) return;
-
-  showSpinner(true);
-  const data = await api('addProperty', {
-    client_id: targetClientId,
-    url: p.url,
-    price: p.price,
-    address: p.addr,
-    rooms: p.rooms,
-    sqm: p.m2,
-    floor_info: p.floor,
-    image_url: p.image_url || ''
-  });
-  showSpinner(false);
-
-  if(data.id) {
-    // Save image_url if present
-    if(p.image_url || p.plan_url) {
-      const _extra = { id: data.id };
-      if(p.image_url) _extra.image_url = p.image_url;
-      if(p.plan_url && p.plan_url.indexOf('data:') !== 0) _extra.plan_url = p.plan_url;
-      api('updateProperty', _extra);
-    }
-    // Add to target client's props in memory
-    const targetClient = state.clients.find(x=>x.id===targetClientId);
-    if(targetClient) {
-      targetClient.props.push({
-        id: data.id, url: p.url, price: p.price, addr: p.addr,
-        rooms: p.rooms, m2: p.m2, floor: p.floor,
-        liked: false, comment: '', agent_comment: '', client_comment: '',
-        image_url: p.image_url || '', rejected: false, plan_url: (p.plan_url && p.plan_url.indexOf('data:')!==0) ? p.plan_url : ''
-      });
-    }
-    closeCopyProp();
-    // Show success toast
-    const toast = document.createElement('div');
-    toast.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1B3A5C;color:#fff;padding:10px 20px;border-radius:8px;font-size:14px;z-index:300';
-    toast.textContent = '✓ Copiado a ' + (targetClient ? targetClient.name : 'cliente');
-    document.body.appendChild(toast);
-    setTimeout(() => toast.remove(), 2500);
-  }
-}
-
-document.getElementById('copy-prop-modal').addEventListener('click', function(e){ if(e.target===this) closeCopyProp(); });
-
-/* ---- EDIT VISIT ---- */
-let editingVisitId = null;
-
-function openEditVisit(id) {
-  const v = visits.find(x=>x.id===id);
-  if(!v) return;
-  editingVisitId = id;
-
-  // Populate client dropdown
-  const sel = document.getElementById('ev-client');
-  sel.innerHTML = '<option value="">— Seleccionar cliente —</option>';
-  state.clients.forEach(c => {
-    const opt = document.createElement('option');
-    opt.value = c.name;
-    opt.textContent = c.name;
-    if(c.name === v.client) opt.selected = true;
-    sel.appendChild(opt);
-  });
-
-  document.getElementById('ev-date').value = v.date || '';
-  document.getElementById('ev-time').value = v.time || '';
-  document.getElementById('ev-addr').value = v.addr || '';
-  document.getElementById('ev-url').value = v.url || '';
-  document.getElementById('edit-visit-modal').classList.add('open');
-}
-
-function closeEditVisit() {
-  document.getElementById('edit-visit-modal').classList.remove('open');
-  editingVisitId = null;
-}
-
-async function saveEditVisit() {
-  const v = visits.find(x=>x.id===editingVisitId);
-  if(!v) return;
-
-  const client_name = document.getElementById('ev-client').value;
-  const date = document.getElementById('ev-date').value;
-  const time = document.getElementById('ev-time').value;
-  const address = document.getElementById('ev-addr').value.trim();
-  const url = document.getElementById('ev-url').value.trim();
-  if(!date || !address) return;
-
-  showSpinner(true);
-  await api('updateVisit', { id: editingVisitId, client_name, date, time, address, url });
-  showSpinner(false);
-
-  // Update local state
-  v.client = client_name;
-  v.date = date;
-  v.time = time;
-  v.addr = address;
-  v.url = url;
-
-  closeEditVisit();
-  renderCal();
-}
-
-document.getElementById('edit-visit-modal').addEventListener('click', function(e){ if(e.target===this) closeEditVisit(); });
-
-/* ---- SCHEDULE VISIT FROM PROP ---- */
-let schedulingPropId = null;
-
-function scheduleVisitFromProp(pid) {
-  const c = state.currentClient ? state.clients.find(x=>x.id===state.currentClient) : null;
-  const p = c && c.props.find(x=>x.id===pid);
-  if(!p) return;
-  schedulingPropId = pid;
-
-  // Pre-fill info
-  const info = document.getElementById('sv-prop-info');
-  if(info) info.innerHTML = `<strong>${p.price}</strong> · ${p.addr}${p.rooms?' · '+p.rooms:''}`;
-
-  // Pre-fill address
-  document.getElementById('sv-addr').value = p.addr !== '—' ? p.addr : '';
-
-  // Pre-fill today's date
-  document.getElementById('sv-date').value = new Date().toISOString().split('T')[0];
-
-  document.getElementById('schedule-visit-modal').classList.add('open');
-}
-
-function closeScheduleVisit() {
-  document.getElementById('schedule-visit-modal').classList.remove('open');
-  schedulingPropId = null;
-}
-
-async function confirmScheduleVisit() {
-  const c = state.currentClient ? state.clients.find(x=>x.id===state.currentClient) : null;
-  const p = c && c.props.find(x=>x.id===schedulingPropId);
-  if(!p || !c) return;
-
-  const date = document.getElementById('sv-date').value;
-  const time = document.getElementById('sv-time').value;
-  const address = document.getElementById('sv-addr').value.trim();
-  if(!date || !address) return;
-
-  showSpinner(true);
-  const coords2 = await geocodeAddress(address);
-  const lat2 = coords2 ? coords2.lat : -34.61;
-  const lng2 = coords2 ? coords2.lng : -58.43;
-  const data = await api('addVisit', {
-    date, time, address,
-    client_name: c.name,
-    url: p.url,
-    lat: lat2, lng: lng2
-  });
-  showSpinner(false);
-
-  if(data.id) {
-    visits.push({ id:data.id, date, time, addr:address, client:c.name, url:p.url, lat:lat2, lng:lng2 });
-    closeScheduleVisit();
-    // Switch to visits tab to show it
-    switchTab('visits');
-    selectDate(date);
-  }
-}
-
-document.getElementById('schedule-visit-modal').addEventListener('click', function(e){ if(e.target===this) closeScheduleVisit(); });
-
-/* ---- EDIT CLIENT ---- */
-function openEditClient() {
-  const c = state.clients.find(x=>x.id===state.currentClient);
-  if(!c) return;
-  document.getElementById('ec-name').value = c.name || '';
-  document.getElementById('ec-budget').value = c.budget || '';
-  document.getElementById('ec-zone').value = c.zone || '';
-  document.getElementById('ec-prefs').value = c.prefs || '';
-  document.getElementById('edit-client-modal').classList.add('open');
-}
-
-function closeEditClient() {
-  document.getElementById('edit-client-modal').classList.remove('open');
-}
-
-async function saveEditClient() {
-  const c = state.clients.find(x=>x.id===state.currentClient);
-  if(!c) return;
-  const name = document.getElementById('ec-name').value.trim();
-  const budget = document.getElementById('ec-budget').value.trim();
-  const zone = document.getElementById('ec-zone').value.trim();
-  const prefs = document.getElementById('ec-prefs').value.trim();
-  if(!name) return;
-  showSpinner(true);
-  await api('updateClient', { id: c.id, name, budget, zone, prefs });
-  showSpinner(false);
-  c.name = name; c.budget = budget; c.zone = zone; c.prefs = prefs;
-  document.getElementById('detail-name').textContent = name;
-  renderClientBudge(c);
-  document.getElementById('detail-avatar').textContent = getInitials(name);
-  closeEditClient();
-}
-
-async function deleteClientFromModal() {
-  if(!confirm('¿Eliminar este cliente y todas sus propiedades?')) return;
-  showSpinner(true);
-  await api('deleteClient', { id: state.currentClient });
-  showSpinner(false);
-  closeEditClient();
-  showClientsList();
-}
-
-document.getElementById('edit-client-modal').addEventListener('click', function(e){ if(e.target===this) closeEditClient(); });
-
-/* ---- EDIT PROPERTY ---- */
-let editingPropId = null;
-let pendingPlan = null;   // {data (base64), mime, dataUrl}
-let planRemoved = false;
-
-function showPlanPreview(url) {
-  const box = document.getElementById('ep-plan-preview');
-  if(url) { document.getElementById('ep-plan-img').src = url; box.style.display = 'flex'; }
-  else { document.getElementById('ep-plan-img').src = ''; box.style.display = 'none'; }
-}
-
-function compressImage(file, maxSide, quality) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onerror = () => reject(new Error('read error'));
-    reader.onload = () => {
-      const img = new Image();
-      img.onerror = () => reject(new Error('image error'));
-      img.onload = () => {
-        let w = img.width, h = img.height;
-        const k = Math.min(1, maxSide / Math.max(w, h));
-        w = Math.round(w*k); h = Math.round(h*k);
-        const cv = document.createElement('canvas');
-        cv.width = w; cv.height = h;
-        const ctx = cv.getContext('2d');
-        ctx.fillStyle = '#fff'; ctx.fillRect(0,0,w,h);
-        ctx.drawImage(img, 0, 0, w, h);
-        const dataUrl = cv.toDataURL('image/jpeg', quality);
-        resolve({ dataUrl, data: dataUrl.split(',')[1], mime: 'image/jpeg' });
-      };
-      img.src = reader.result;
-    };
-    reader.readAsDataURL(file);
-  });
-}
-
-function loadScriptOnce(src) {
-  return new Promise((resolve, reject) => {
-    const el = document.createElement('script');
-    el.src = src; el.onload = resolve; el.onerror = () => reject(new Error('load '+src));
-    document.head.appendChild(el);
-  });
-}
-
-async function pdfFirstPageToImage(file) {
-  if(!window.pdfjsLib) {
-    await loadScriptOnce('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js');
-    window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-  }
-  const buf = await file.arrayBuffer();
-  const pdf = await window.pdfjsLib.getDocument({ data: buf }).promise;
-  const page = await pdf.getPage(1);
-  const vp0 = page.getViewport({ scale: 1 });
-  const scale = Math.min(3, 1600 / Math.max(vp0.width, vp0.height));
-  const vp = page.getViewport({ scale });
-  const cv = document.createElement('canvas');
-  cv.width = Math.round(vp.width); cv.height = Math.round(vp.height);
-  const ctx = cv.getContext('2d');
-  ctx.fillStyle = '#fff'; ctx.fillRect(0,0,cv.width,cv.height);
-  await page.render({ canvasContext: ctx, viewport: vp }).promise;
-  const dataUrl = cv.toDataURL('image/jpeg', 0.8);
-  return { dataUrl, data: dataUrl.split(',')[1], mime: 'image/jpeg' };
-}
-
-async function onPlanFileChosen(input) {
-  const f = input.files && input.files[0];
-  if(!f) return;
-  try {
-    const isPdf = f.type === 'application/pdf' || /\.pdf$/i.test(f.name);
-    pendingPlan = isPdf ? await pdfFirstPageToImage(f) : await compressImage(f, 1600, 0.8);
-    planRemoved = false;
-    showPlanPreview(pendingPlan.dataUrl);
-  } catch(e) {
-    console.error('plan compress error', e);
-    alert('No se pudo leer el archivo. Probá con una imagen (JPG/PNG).');
-  }
-}
-
-function removePlanInModal() {
-  pendingPlan = null; planRemoved = true;
-  document.getElementById('ep-plan-file').value = '';
-  showPlanPreview('');
-}
-
-function openPlan(pid) {
-  let p = null;
-  state.clients.forEach(c => { const x = (c.props||[]).find(y=>y.id===pid); if(x) p = x; });
-  if(!p || !p.plan_url) return;
-  document.getElementById('plan-lightbox-img').src = p.plan_url;
-  document.getElementById('plan-lightbox').style.display = 'flex';
-}
-function closePlan() {
-  document.getElementById('plan-lightbox').style.display = 'none';
-  document.getElementById('plan-lightbox-img').src = '';
-}
-
-async function uploadPlanFor(pid, clientId, plan) {
-  const payload = JSON.stringify({ action: 'uploadPlan', id: pid, mime: plan.mime, data: plan.data });
-  const applyUrl = (url) => {
-    const c = state.clients.find(x=>x.id===clientId);
-    const p = c && c.props.find(x=>x.id===pid);
-    if(p) { p.plan_url = url; renderClientSections(c.props, 'detail-props-grid', true); }
-  };
-  // 1) try a readable request so we can see real errors
-  try {
-    const res = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: payload });
-    const txt = await res.text();
-    console.log('uploadPlan response:', txt.slice(0, 300));
-    let j = null; try { j = JSON.parse(txt); } catch(e) {}
-    if(j && j.plan_url) { applyUrl(j.plan_url); return true; }
-    if(j && j.error) { alert('No se pudo guardar el plano: ' + j.error); markPlanFailed(pid, clientId); return false; }
-    // HTML response (e.g. old script version / no permission)
-    alert('El plano NO se guardó: el script de Google no respondió como se esperaba. Revisá que Apps Script tenga la última versión (Deploy → New version) y que hayas dado permiso a Drive.');
-    markPlanFailed(pid, clientId);
-    return false;
-  } catch(e) {
-    console.warn('readable upload failed, falling back to no-cors', e);
-  }
-  // 2) fallback: no-cors, then poll the sheet for the Drive URL
-  try { await fetch(API_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: payload }); }
-  catch(e) { console.error('uploadPlan fetch error', e); }
-  for(let i=0; i<8; i++) {
-    await new Promise(r => setTimeout(r, 3000));
-    const data = await api('getProperties', { clientId });
-    if(Array.isArray(data)) {
-      const row = data.find(x => String(x.id) === String(pid));
-      if(row && row.plan_url) { applyUrl(row.plan_url); return true; }
-    }
-  }
-  alert('El plano NO se guardó en Google (no apareció en la tabla). Revisá que Apps Script tenga la última versión y el permiso de Drive.');
-  markPlanFailed(pid, clientId);
-  return false;
-}
-
-function markPlanFailed(pid, clientId) {
-  const c = state.clients.find(x=>x.id===clientId);
-  const p = c && c.props.find(x=>x.id===pid);
-  if(p && p.plan_url && p.plan_url.indexOf('data:') === 0) { p.plan_url = ''; renderClientSections(c.props, 'detail-props-grid', true); }
-}
-
-function openEditProp(pid) {
-  const c = state.clients.find(x=>x.id===state.currentClient);
-  const p = c && c.props.find(x=>x.id===pid);
-  if(!p) return;
-  editingPropId = pid;
-  document.getElementById('ep-url').value = p.url || '';
-  document.getElementById('ep-price').value = p.price || '';
-  document.getElementById('ep-addr').value = p.addr || '';
-  document.getElementById('ep-rooms').value = p.rooms || '';
-  document.getElementById('ep-m2').value = p.m2 || '';
-  document.getElementById('ep-floor').value = p.floor || '';
-  document.getElementById('ep-photo').value = p.image_url || '';
-  document.getElementById('ep-covered').value = p.covered || '';
-  document.getElementById('ep-semicov').value = p.semicov || '';
-  document.getElementById('ep-open').value = p.open_area || '';
-  document.getElementById('ep-avg-price').value = p.avg_price || '';
-  pendingPlan = null; planRemoved = false;
-  document.getElementById('ep-plan-file').value = '';
-  showPlanPreview(p.plan_url || '');
-  document.getElementById('edit-prop-modal').dataset.pid = pid;
-  document.getElementById('edit-prop-modal').classList.add('open');
-}
-
-function closeEditProp() {
-  document.getElementById('edit-prop-modal').classList.remove('open');
-  editingPropId = null;
-}
-
-async function saveEditProp() {
-  // Read fields FIRST
-  const newUrl      = document.getElementById('ep-url').value.trim();
-  const newPrice    = document.getElementById('ep-price').value.trim();
-  const newAddr     = document.getElementById('ep-addr').value.trim();
-  const newRooms    = document.getElementById('ep-rooms').value.trim();
-  const newM2       = document.getElementById('ep-m2').value.trim();
-  const newFloor    = document.getElementById('ep-floor').value.trim();
-  const newPhoto    = document.getElementById('ep-photo').value.trim();
-  const newCovered  = document.getElementById('ep-covered').value.trim();
-  const newSemicov  = document.getElementById('ep-semicov').value.trim();
-  const newOpen     = document.getElementById('ep-open').value.trim();
-  const newAvgPrice = document.getElementById('ep-avg-price').value.trim();
-
-  // Get ID from multiple sources
-  const pid = editingPropId
-    || document.getElementById('edit-prop-modal').dataset.pid
-    || document.getElementById('edit-prop-modal').getAttribute('data-pid');
-
-  console.log('saveEditProp: pid=', pid, 'covered=', newCovered, 'avg_price=', newAvgPrice);
-
-  if(!pid) { console.error('saveEditProp: no pid!'); return; }
-
-  const c = state.clients.find(x=>x.id===state.currentClient);
-  const p = c && c.props.find(x=>x.id===pid);
-  if(!p) { console.error('saveEditProp: prop not found!', pid); return; }
-
-  showSpinner(true);
-  const result = await api('updateProperty', {
-    id: pid,
-    url: newUrl, price: newPrice, address: newAddr,
-    rooms: newRooms, sqm: newM2, floor_info: newFloor,
-    image_url: newPhoto, covered: newCovered, semicov: newSemicov,
-    open_area: newOpen, avg_price: newAvgPrice
-  });
-  showSpinner(false);
-  console.log('updateProperty result:', result);
-
-  // Update local state
-  p.url = newUrl; p.price = newPrice; p.addr = newAddr;
-  p.rooms = newRooms; p.m2 = newM2; p.floor = newFloor;
-  p.image_url = newPhoto; p.covered = newCovered;
-  p.semicov = newSemicov; p.open_area = newOpen; p.avg_price = newAvgPrice;
-  if(newPhoto) imageCache[pid] = newPhoto;
-
-  const _plan = pendingPlan, _removed = planRemoved;
-  if(_removed && !_plan) {
-    p.plan_url = '';
-    api('updateProperty', { id: pid, plan_url: '' });
-  } else if(_plan) {
-    p.plan_url = _plan.dataUrl; // show immediately; replaced by the Drive link once uploaded
-  }
-
-  closeEditProp();
-  renderClientSections(c.props, 'detail-props-grid', true);
-  syncClientView(c);
-
-  if(_plan) uploadPlanFor(pid, c.id, _plan);
-}
-
-document.getElementById('edit-prop-modal').addEventListener('click', function(e){ if(e.target===this) closeEditProp(); });
-
-/* ---- CLIENT CALENDAR ---- */
-let calYearC = new Date().getFullYear();
-let calMonthC = new Date().getMonth();
-let selectedDateC = todayStr;
-let highlightedVisitIdC = null;
-
-function prevMonthC() { calMonthC--; if(calMonthC<0){calMonthC=11;calYearC--;} renderCalC(); }
-function nextMonthC() { calMonthC++; if(calMonthC>11){calMonthC=0;calYearC++;} renderCalC(); }
-
-function renderCalC(clientName) {
-  const Lx = getLang();
-  const lbl = document.getElementById('cal-month-lbl-c');
-  if(lbl) lbl.textContent = `${Lx.MONTHS[calMonthC]} ${calYearC}`;
-  const clientVisits = clientName ? visits.filter(v=>v.client===clientName) : visits;
-  const datesWithVisits = new Set(clientVisits.map(v=>v.date));
-  const first = new Date(calYearC, calMonthC, 1);
-  const startDow = (first.getDay()+6)%7;
-  const daysInMonth = new Date(calYearC, calMonthC+1, 0).getDate();
-  const prevDays = new Date(calYearC, calMonthC, 0).getDate();
-  let html = Lx.DAYS.map(d=>`<div class="cal-dow">${d}</div>`).join('');
-  for(let i=0;i<startDow;i++) html+=`<div class="cal-day other">${prevDays-startDow+1+i}</div>`;
-  for(let d=1;d<=daysInMonth;d++){
-    const ds=`${calYearC}-${String(calMonthC+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-    const cls=['cal-day',ds===todayStr?'today':'',ds===selectedDateC?'selected':'',datesWithVisits.has(ds)?'has-visit':''].filter(Boolean).join(' ');
-    html+=`<div class="${cls}" onclick="selectDateC('${ds}')">${d}</div>`;
-  }
-  const rem=(startDow+daysInMonth)%7; if(rem) for(let i=1;i<=7-rem;i++) html+=`<div class="cal-day other">${i}</div>`;
-  const g = document.getElementById('cal-grid-c');
-  if(g) g.innerHTML = html;
-  renderDayVisitsC(clientName);
-}
-
-function selectDateC(d) {
-  selectedDateC = d;
-  const [y,m] = d.split('-').map(Number);
-  calYearC=y; calMonthC=m-1;
-  highlightedVisitIdC = null;
-  const c = state.currentClient ? state.clients.find(x=>x.id===state.currentClient) : state.clients[0];
-  renderCalC(c ? c.name : null);
-}
-
-function renderDayVisitsC(clientName) {
-  const clientVisits = clientName ? visits.filter(v=>v.client===clientName) : visits;
-  const dayV = clientVisits.filter(v=>v.date===selectedDateC).sort((a,b)=>a.time.localeCompare(b.time));
-  const el = document.getElementById('day-visits-c');
-  if(!el) return;
-  if(!dayV.length){
-    el.innerHTML=`<div class="empty-day"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>${t('noVisits')}</div>`;
-    renderMapC([]); return;
-  }
-  el.innerHTML = `<div class="visit-list">${dayV.map((v,i)=>`
-    <div class="visit-item${v.id===highlightedVisitIdC?' active':''}" onclick="highlightVisitC(${v.id},'${clientName||''}')" id="vic-${v.id}">
-      <div class="visit-num">${i+1}</div>
-      <div class="visit-info">
-        <div class="visit-time"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:11px;height:11px"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> ${v.time}</div>
-        <div class="visit-addr">${v.addr}</div>
-        ${v.url?`<a class="visit-link" href="${v.url}" target="_blank"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:10px;height:10px"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg> Ver propiedad</a>`:''}
-      </div>
-    </div>`).join('')}</div>`;
-  renderMapC(dayV);
-}
-
-function highlightVisitC(id, clientName) {
-  highlightedVisitIdC = id;
-  document.querySelectorAll('#day-visits-c .visit-item').forEach(el=>el.classList.remove('active'));
-  const el = document.getElementById('vic-'+id);
-  if(el) el.classList.add('active');
-  const clientVisits = clientName ? visits.filter(v=>v.client===clientName) : visits;
-  const dayV = clientVisits.filter(v=>v.date===selectedDateC).sort((a,b)=>a.time.localeCompare(b.time));
-  renderMapC(dayV, id);
-}
-
-function renderMapC(dayV, hlId) {
-  const rc = document.getElementById('route-chips-c');
-  const result = renderLeafletMap(clientMap, clientLayers, 'lmap-client', dayV, hlId, false);
-  clientMap = result.map;
-  clientLayers = result.layers;
-
-  if(!dayV.length) { if(rc) rc.innerHTML=''; return; }
-  const Lx = getLang(), dist = dayV.length > 1 ? (dayV.length*1.8).toFixed(1) : '';
-  if(rc) rc.innerHTML = `
-    <span class="route-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>${Lx.visitCount(dayV.length)}</span>
-    ${dist?`<span class="route-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>${Lx.estDist(dist)}</span>`:''}
-    <span class="route-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>${dayV[0].time} – ${dayV[dayV.length-1].time}</span>
-  `;
-}
-
-// Check if opened as client view (?client=ID)
-const urlParams = new URLSearchParams(window.location.search);
-const clientParam = urlParams.get('client');
-
-async function init() {
-  // Move all modals to body to ensure they work regardless of parent visibility
-  ['edit-prop-modal','edit-client-modal','schedule-visit-modal','copy-prop-modal','edit-visit-modal','new-client-modal','plan-lightbox'].forEach(function(id){
-    const el = document.getElementById(id);
-    if(el && el.parentElement !== document.body) document.body.appendChild(el);
-  });
-  // Apply language now that DOM is ready
-  setLang(localStorage.getItem('lang') || 'es');
-
-  // Show loading spinner
-  const grid = document.getElementById('clients-grid');
-  if(grid) grid.innerHTML = '<div class="empty" style="grid-column:1/-1"><div style="width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 12px"></div><p>Cargando...</p></div>';
-
-  await loadClients();
-  await loadVisits();
-  renderCal();
-
-  if(clientParam) {
-    // Keep loading screen up - don't remove yet
-    // Hide nav tabs permanently for client
-    const tabAgent = document.getElementById('tab-agent');
-    const tabVisits = document.getElementById('tab-visits');
-    if(tabAgent) tabAgent.style.display='none';
-    if(tabVisits) tabVisits.style.display='none';
-
-    // Don't switchTab yet - keep loading screen visible
-    // Set active view silently without triggering renders
-    document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
-    document.getElementById('view-client').classList.add('active');
-
-    state.currentClient = clientParam;
-    const c = state.clients.find(x=>x.id===clientParam);
-    if(c) {
-      await loadProperties(clientParam);
-      // NOW show the client view - loading screen hides inside syncClientView
-      syncClientView(c);
-      // Re-render after visits loaded to show visit status badges
-      if(visits.length) renderClientSections(c.props);
-    } else {
-      // Client not found
-      document.getElementById('view-client').innerHTML = `
-        <div style="text-align:center;padding:4rem 2rem;color:var(--text3)">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:48px;height:48px;margin-bottom:12px;opacity:0.4"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-          <p style="font-size:16px">Catálogo no encontrado.</p>
-          <p style="font-size:13px;margin-top:6px">Verificá el enlace con tu agente.</p>
-        </div>`;
+// ---- HELPERS ----
+function deleteRowById(sheet, id) {
+  const rows = sheet.getDataRange().getValues();
+  const idCol = rows[0].map(h => String(h).trim()).indexOf('id');
+  for (let i = rows.length - 1; i >= 1; i--) {
+    if (String(rows[i][idCol]) === String(id)) {
+      sheet.deleteRow(i + 1);
+      return;
     }
   }
 }
 
-document.addEventListener('DOMContentLoaded', init);
-
-// Safety: show client view after 6 seconds no matter what
-if(new URLSearchParams(window.location.search).get('client')) {
-  setTimeout(hideLoadingScreen, 6000);
+// ---- KEEP ALIVE ----
+// Add a time-driven trigger to run this every 5 minutes
+function keepAlive() {
+  Logger.log('keepAlive: ' + new Date().toISOString());
+  // Just touch the spreadsheet to keep the script warm
+  SpreadsheetApp.openById(SHEET_ID).getName();
 }
-</script>
-
-<script>
-// Move all modals to body to ensure they work regardless of parent visibility
-document.addEventListener('DOMContentLoaded', function() {
-  const modalIds = ['edit-prop-modal','edit-client-modal','schedule-visit-modal',
-                    'copy-prop-modal','edit-visit-modal','new-client-modal','plan-lightbox'];
-  modalIds.forEach(function(id) {
-    const el = document.getElementById(id);
-    if(el && el.parentElement !== document.body) {
-      document.body.appendChild(el);
-      console.log('Moved modal to body:', id);
-    }
-  });
-});
-</script>
-</body>
-</html>
