@@ -171,12 +171,12 @@
   /* MODAL */
   .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; width: 100%; height: 100%; background: rgba(22,24,31,0.5); z-index: 9999; align-items: center; justify-content: center; backdrop-filter: blur(3px); }
   .modal-overlay.open { display: flex; }
-  .modal { background: var(--surface); border-radius: var(--radius); padding: 2rem; width: 460px; max-width: 95vw; box-shadow: var(--shadow-md); border: 1px solid var(--border); }
+  .modal { background: var(--surface); border-radius: var(--radius); padding: 2rem; width: 460px; max-width: 95vw; max-height: 90vh; max-height: 90dvh; overflow-y: auto; -webkit-overflow-scrolling: touch; box-shadow: var(--shadow-md); border: 1px solid var(--border); }
   .modal-title { font-family: 'DM Serif Display', serif; font-size: 22px; margin-bottom: 1.25rem; }
   .form-field { margin-bottom: 1rem; }
   .form-field label { display: block; font-size: 12px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px; }
   .form-field input, .form-field select { width: 100%; }
-  .modal-footer { display: flex; gap: 8px; justify-content: flex-end; margin-top: 1.25rem; }
+  .modal-footer { display: flex; gap: 8px; justify-content: flex-end; margin-top: 1.25rem; position: sticky; bottom: -2rem; background: var(--surface); padding: 12px 0 2px; }
 
   /* ---- VISITS ---- */
   .visits-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
@@ -699,7 +699,7 @@
       </div>
       <div class="form-field full">
         <label>📐 Plano (subir imagen)</label>
-        <input type="file" id="ep-plan-file" accept="image/*" onchange="onPlanFileChosen(this)" style="font-size:13px">
+        <input type="file" id="ep-plan-file" accept="image/*,application/pdf" onchange="onPlanFileChosen(this)" style="font-size:13px">
         <div id="ep-plan-preview" style="margin-top:8px;display:none;align-items:center;gap:10px">
           <img id="ep-plan-img" src="" alt="" style="max-height:90px;max-width:140px;border-radius:6px;border:1px solid var(--border);object-fit:contain;background:#fff">
           <button type="button" class="btn btn-sm btn-danger-ghost" onclick="removePlanInModal()">Quitar plano</button>
@@ -2289,16 +2289,45 @@ function compressImage(file, maxSide, quality) {
   });
 }
 
+function loadScriptOnce(src) {
+  return new Promise((resolve, reject) => {
+    const el = document.createElement('script');
+    el.src = src; el.onload = resolve; el.onerror = () => reject(new Error('load '+src));
+    document.head.appendChild(el);
+  });
+}
+
+async function pdfFirstPageToImage(file) {
+  if(!window.pdfjsLib) {
+    await loadScriptOnce('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js');
+    window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  }
+  const buf = await file.arrayBuffer();
+  const pdf = await window.pdfjsLib.getDocument({ data: buf }).promise;
+  const page = await pdf.getPage(1);
+  const vp0 = page.getViewport({ scale: 1 });
+  const scale = Math.min(3, 1600 / Math.max(vp0.width, vp0.height));
+  const vp = page.getViewport({ scale });
+  const cv = document.createElement('canvas');
+  cv.width = Math.round(vp.width); cv.height = Math.round(vp.height);
+  const ctx = cv.getContext('2d');
+  ctx.fillStyle = '#fff'; ctx.fillRect(0,0,cv.width,cv.height);
+  await page.render({ canvasContext: ctx, viewport: vp }).promise;
+  const dataUrl = cv.toDataURL('image/jpeg', 0.8);
+  return { dataUrl, data: dataUrl.split(',')[1], mime: 'image/jpeg' };
+}
+
 async function onPlanFileChosen(input) {
   const f = input.files && input.files[0];
   if(!f) return;
   try {
-    pendingPlan = await compressImage(f, 1600, 0.8);
+    const isPdf = f.type === 'application/pdf' || /\.pdf$/i.test(f.name);
+    pendingPlan = isPdf ? await pdfFirstPageToImage(f) : await compressImage(f, 1600, 0.8);
     planRemoved = false;
     showPlanPreview(pendingPlan.dataUrl);
   } catch(e) {
     console.error('plan compress error', e);
-    alert('No se pudo leer la imagen');
+    alert('No se pudo leer el archivo. Probá con una imagen (JPG/PNG).');
   }
 }
 
