@@ -2350,29 +2350,47 @@ function closePlan() {
 }
 
 async function uploadPlanFor(pid, clientId, plan) {
+  const payload = JSON.stringify({ action: 'uploadPlan', id: pid, mime: plan.mime, data: plan.data });
+  const applyUrl = (url) => {
+    const c = state.clients.find(x=>x.id===clientId);
+    const p = c && c.props.find(x=>x.id===pid);
+    if(p) { p.plan_url = url; renderClientSections(c.props, 'detail-props-grid', true); }
+  };
+  // 1) try a readable request so we can see real errors
   try {
-    await fetch(API_URL, {
-      method: 'POST', mode: 'no-cors',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ action: 'uploadPlan', id: pid, mime: plan.mime, data: plan.data })
-    });
-  } catch(e) { console.error('uploadPlan fetch error', e); }
-  // response is unreadable (no-cors): poll the sheet until the Drive URL appears
+    const res = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: payload });
+    const txt = await res.text();
+    console.log('uploadPlan response:', txt.slice(0, 300));
+    let j = null; try { j = JSON.parse(txt); } catch(e) {}
+    if(j && j.plan_url) { applyUrl(j.plan_url); return true; }
+    if(j && j.error) { alert('No se pudo guardar el plano: ' + j.error); markPlanFailed(pid, clientId); return false; }
+    // HTML response (e.g. old script version / no permission)
+    alert('El plano NO se guardó: el script de Google no respondió como se esperaba. Revisá que Apps Script tenga la última versión (Deploy → New version) y que hayas dado permiso a Drive.');
+    markPlanFailed(pid, clientId);
+    return false;
+  } catch(e) {
+    console.warn('readable upload failed, falling back to no-cors', e);
+  }
+  // 2) fallback: no-cors, then poll the sheet for the Drive URL
+  try { await fetch(API_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: payload }); }
+  catch(e) { console.error('uploadPlan fetch error', e); }
   for(let i=0; i<8; i++) {
     await new Promise(r => setTimeout(r, 3000));
     const data = await api('getProperties', { clientId });
     if(Array.isArray(data)) {
       const row = data.find(x => String(x.id) === String(pid));
-      if(row && row.plan_url) {
-        const c = state.clients.find(x=>x.id===clientId);
-        const p = c && c.props.find(x=>x.id===pid);
-        if(p) { p.plan_url = row.plan_url; renderClientSections(c.props, 'detail-props-grid', true); }
-        return true;
-      }
+      if(row && row.plan_url) { applyUrl(row.plan_url); return true; }
     }
   }
-  console.warn('plan upload not confirmed');
+  alert('El plano NO se guardó en Google (no apareció en la tabla). Revisá que Apps Script tenga la última versión y el permiso de Drive.');
+  markPlanFailed(pid, clientId);
   return false;
+}
+
+function markPlanFailed(pid, clientId) {
+  const c = state.clients.find(x=>x.id===clientId);
+  const p = c && c.props.find(x=>x.id===pid);
+  if(p && p.plan_url && p.plan_url.indexOf('data:') === 0) { p.plan_url = ''; renderClientSections(c.props, 'detail-props-grid', true); }
 }
 
 function openEditProp(pid) {
